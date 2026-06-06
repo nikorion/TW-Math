@@ -131,9 +131,32 @@ Options:
 
 ---
 
+!! Credits
+
+This plugin is based on the work of mklauber and the original Tiddly Math.js plugin:
+
+* https://github.com/mklauber/tiddly-mathjs
+
+While this project has evolved beyond the original implementation, its initial structure, TiddlyWiki integration patterns, and overall approach were inspired by that work.
+
+Mathematical expression parsing and evaluation are provided by Math.js, created by Jos de Jong and maintained by the Math.js community:
+
+* https://github.com/josdejong/mathjs
+
+Many thanks to Jos de Jong and all Math.js contributors for their continued work on one of the most comprehensive mathematics libraries available for JavaScript.
+
+
+---
+
+!! Development Notes
+
+This project was developed with the assistance of OpenAI's ChatGPT for code review, technical discussions, refactoring ideas, and documentation support.
+
+---
+
 !! 📜 License
 
-MIT License  
-Includes Math.js (Apache 2.0)
+* MIT License  
+* Includes Math.js (Apache 2.0)
 
 </$reveal>
