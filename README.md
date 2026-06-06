@@ -1,4 +1,4 @@
-# 🧮 TiddlyMathJS Calc Widget
+# 🧮 Tiddlywiki Math.js Widget
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
