@@ -52,7 +52,9 @@ Supports:
 
 Example:
 
+```
 <$calc scientific="auto">0.00000012</$calc>
+```
 
 Modes:
 - auto
@@ -90,13 +92,17 @@ Modes:
 
 ### Basic
 
+```
 <$calc>1 + 2 * 3</$calc>
+```
 
 ---
 
 ### Locale control
 
+```
 <$calc in="auto">1,2 × 10^3</$calc>
+```
 
 Options:
 - auto
@@ -107,13 +113,17 @@ Options:
 
 ### Output control
 
+```
 <$calc out="fr-FR">1234.56</$calc>
+```
 
 ---
 
 ### Scientific mode
 
+```
 <$calc scientific="always">0.00000012</$calc>
+```
 
 ---
 
