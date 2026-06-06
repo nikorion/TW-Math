@@ -162,6 +162,17 @@ Options:
 
 ---
 
+## Version History
+
+### v0.1.0 (Experimental)
+
+Initial public release and repository creation.
+
+This version represents the first implementation of the plugin and serves as the foundation for future development.
+
+
+---
+
 ## Credits
 
 This plugin is based on the work of mklauber and the original Tiddly Math.js plugin:
