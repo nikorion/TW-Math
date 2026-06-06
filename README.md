@@ -162,9 +162,11 @@ Options:
 
 ---
 
-## Version History
+## 🕰️ Version History
 
 ### v0.1.0 (Experimental)
+
+2026 06 06
 
 Initial public release and repository creation.
 
@@ -173,7 +175,7 @@ This version represents the first implementation of the plugin and serves as the
 
 ---
 
-## Credits
+## 🙏 Credits
 
 This plugin is based on the work of mklauber and the original Tiddly Math.js plugin:
 
@@ -189,7 +191,7 @@ Many thanks to Jos de Jong and all Math.js contributors for their continued work
 
 ---
 
-## Development Notes
+## 🤖 Development Notes
 
 This project was developed with the assistance of OpenAI's ChatGPT for code review, technical discussions, refactoring ideas, and documentation support.
 
