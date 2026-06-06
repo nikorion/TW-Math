@@ -2,8 +2,6 @@
 
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
-🚧 **Experimental / Development version**
-
 This project is currently under active development and is not production-ready.
 
 Expect breaking changes, unstable behavior, and ongoing API adjustments.

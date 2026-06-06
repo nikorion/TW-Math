@@ -7,6 +7,8 @@ type: text/vnd.tiddlywiki
 
 This project is under active development and is not production-ready.
 
+Expect breaking changes, unstable behavior, and ongoing API adjustments.
+
 !! 📌 Overview
 
 A lightweight TiddlyWiki widget integrating Math.js for inline expression evaluation.
