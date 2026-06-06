@@ -129,9 +129,20 @@ Options:
 
 ## 📦 Installation
 
-1. Copy plugin into TiddlyWiki plugins folder
-2. Enable plugin
+1. Copy plugin folder into TiddlyWiki plugins folder `./plugins`
+2. Enable plugin in `tiddlywiki.info` under `nikorion/math`
 3. Reload wiki
+
+Or 
+
+1. Drag and Drop the packed plugin
+
+---
+
+## 🔗 Links
+
+- GitHub repository : https://github.com/nikorion/TW-Math
+- Live demo : soon
 
 ---
 
@@ -188,6 +199,12 @@ Mathematical expression parsing and evaluation are provided by Math.js, created 
 * https://github.com/josdejong/mathjs
 
 Many thanks to Jos de Jong and all Math.js contributors for their continued work on one of the most comprehensive mathematics libraries available for JavaScript.
+
+### Icon
+
+- Source: https://www.svgrepo.com/svg/228720/calculating-maths
+- Provider: SVG Repo (https://www.svgrepo.com/)
+- License: see SVG Repo terms of use
 
 ---
 

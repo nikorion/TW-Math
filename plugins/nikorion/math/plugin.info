@@ -1,10 +1,14 @@
 {
   "title": "$:/plugins/nikorion/math",
-  "name": "TiddlyWiki MathJS Widget",
-  "description": "Lightweight TiddlyWiki widget integrating Math.js with FR/EN-aware parsing, configurable formatting, unit support, caching, and sandboxed evaluation.",
-  "author": "nikorion",
+  "name": "Math.js",
+  "description": "Lightweight TiddlyWiki widget integrating Math.js",
+  "author": "Nicolas Goyot aka nikorion",
+  "source": "https://github.com/nikorion/TW-Math",
+  "list": "readme license history tree",
   "version": "0.1.0",
+  "stability": "STABILITY_1_EXPERIMENTAL",
   "core-version": ">=5.2.0",
   "type": "application/json",
-  "plugin-type": "plugin"
+  "plugin-type": "plugin",
+  "icon": "$:/plugins/nikorion/math/icon"
 }

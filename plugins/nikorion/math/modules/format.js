@@ -8,7 +8,7 @@ module-type: library
 
 "use strict";
 
-var math = require("$:/plugins/mklauber/math.js/math.js");
+var math = require("$:/plugins/nikorion/math/modules/math.js");
 
 function sciFR(x) {
 
