@@ -1,0 +1,10 @@
+{
+  "title": "$:/plugins/nikorion/math",
+  "name": "TiddlyWiki MathJS Widget",
+  "description": "Lightweight TiddlyWiki widget integrating Math.js with FR/EN-aware parsing, configurable formatting, unit support, caching, and sandboxed evaluation.",
+  "author": "nikorion",
+  "version": "0.1.0",
+  "core-version": ">=5.2.0",
+  "type": "application/json",
+  "plugin-type": "plugin"
+}

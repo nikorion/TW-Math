@@ -1,0 +1,139 @@
+title: $:/plugins/nikorion/math/readme.tid
+type: text/vnd.tiddlywiki
+
+/% title: README
+tags: Documentation
+type: text/vnd.tiddlywiki %/
+
+!! 🧮 TiddlyWiki Math.js Widget
+
+[img[https://img.shields.io/badge/status-experimental-orange]]
+
+🚧 ''Experimental / Development version''
+
+This project is under active development and is not production-ready.
+
+<$reveal type="nomatch" text="show" default="hide">
+<$button set="$:/state/mathjs/readme" setTo="show">Show details</$button>
+</$reveal>
+
+<$reveal state="$:/state/mathjs/readme" type="match" text="show">
+
+!! 📌 Overview
+
+A lightweight TiddlyWiki widget integrating Math.js for inline expression evaluation.
+
+!! ⚙️ Features
+
+!!! 🌍 Locale-aware parsing
+* FR/EN numeric formats
+* auto-detection
+
+!!! 🧮 Math.js engine
+* arithmetic
+* functions (sin, cos, sqrt, log)
+* fractions
+* units (basic support)
+
+!!! 📐 Scientific notation
+
+<$codeblock language="tidal">
+<$calc scientific="auto">0.00000012</$calc>
+</$codeblock>
+
+Modes:
+* auto
+* always
+* never
+
+!!! 🇫🇷 French formatting
+* 1 000 000 spacing
+* decimal comma support
+* × 10^n scientific style
+
+!!! ⚡ Performance
+* LRU cache
+* lazy evaluation
+* optimized refresh cycle
+
+!!! 🔒 Safety
+* expression sandboxing
+* function whitelist
+* avoids unsafe JS access
+
+---
+
+!! 🧩 Usage
+
+!!! Basic
+
+<$codeblock language="tidal">
+<$calc>1 + 2 * 3</$calc>
+</$codeblock>
+
+!!! Locale control
+
+<$codeblock language="tidal">
+<$calc in="auto">1,2 × 10^3</$calc>
+</$codeblock>
+
+Options:
+* auto
+* fr-FR
+* en-US
+
+!!! Output control
+
+<$codeblock language="tidal">
+<$calc out="fr-FR">1234.56</$calc>
+</$codeblock>
+
+!!! Scientific mode
+
+<$codeblock language="tidal">
+<$calc scientific="always">0.00000012</$calc>
+</$codeblock>
+
+---
+
+!! 📦 Installation
+
+# Copy plugin into TiddlyWiki plugins folder
+# Enable plugin in control panel
+# Reload wiki
+
+---
+
+!! 🧠 Technical notes
+
+* Built on Math.js
+* Uses widget lifecycle (render / refresh)
+* No dependencies beyond Math.js
+* Designed for single-file wiki usage
+
+---
+
+!! ⚠️ Limitations
+
+* Not a spreadsheet engine
+* No dependency graph
+* Sandbox is heuristic (not secure VM)
+* Locale detection is probabilistic
+
+---
+
+!! 🚧 Roadmap
+
+* improved unit formatting
+* stricter sandbox mode
+* LaTeX output option
+* performance profiling tools
+
+---
+
+!! 📜 License
+
+MIT License  
+Includes Math.js (Apache 2.0)
+
+</$reveal>
