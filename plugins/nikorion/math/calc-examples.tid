@@ -2,7 +2,7 @@ title: $:/plugins/nikorion/math/examples
 tags: $:/tags/BrowserStorage
 type: text/vnd.tiddlywiki
 
-! <$calc> widget — examples
+! `<$calc>` widget — examples
 
 !! Basic arithmetic & number formatting
 

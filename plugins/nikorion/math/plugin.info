@@ -4,7 +4,7 @@
   "description": "Lightweight TiddlyWiki widget integrating Math.js",
   "author": "Nicolas Goyot aka nikorion",
   "source": "https://github.com/nikorion/TW-Math",
-  "list": "readme license history tree",
+  "list": "readme license history examples tree",
   "version": "0.1.0",
   "stability": "STABILITY_1_EXPERIMENTAL",
   "core-version": ">=5.2.0",
