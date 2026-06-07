@@ -27,11 +27,9 @@ A lightweight TiddlyWiki widget integrating Math.js for inline expression evalua
 
 !!! 📐 Scientific notation
 
-<$codeblock>
-<$calc scientific="auto">0.00000012</$calc>
-</$codeblock>
+<$codeblock code="""<$calc scientific="auto">0.00000012</$calc>"""/>
 
-Modes:
+;Modes:
 * auto
 * always
 * never
@@ -57,32 +55,24 @@ Modes:
 
 !!! Basic
 
-<$codeblock>
-<$calc>1 + 2 * 3</$calc>
-</$codeblock>
+<$codeblock code="""<$calc>1 + 2 * 3</$calc>"""/>
 
 !!! Locale control
 
-<$codeblock>
-<$calc in="auto">1,2 × 10^3</$calc>
-</$codeblock>
+<$codeblock code="""<$calc in="auto">1,2 × 10^3</$calc>"""/>
 
-Options:
+; Options:
 * auto
 * fr-FR
 * en-US
 
 !!! Output control
 
-<$codeblock>
-<$calc out="fr-FR">1234.56</$calc>
-</$codeblock>
+<$codeblock code="""<$calc out="fr-FR">1234.56</$calc>"""/>
 
 !!! Scientific mode
 
-<$codeblock>
-<$calc scientific="always">0.00000012</$calc>
-</$codeblock>
+<$codeblock code="""<$calc scientific="always">0.00000012</$calc>"""/>
 
 ---
 
