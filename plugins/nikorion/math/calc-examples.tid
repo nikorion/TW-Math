@@ -6,7 +6,7 @@ type: text/vnd.tiddlywiki
 
 !! Basic arithmetic & number formatting
 
-| Expression | `out="en-US"` | `out="fr-FR"` |h
+| Expression | `[out="en-US"]` | `out="fr-FR"` |h
 | `<$calc>1 + 2 * 3</$calc>` | <$calc>1 + 2 * 3</$calc> | <$calc out="fr-FR">1 + 2 * 3</$calc> |
 | `<$calc>1 000 000 / 3</$calc>` (FR thousands space) | <$calc>1 000 000 / 3</$calc> | <$calc out="fr-FR">1 000 000 / 3</$calc> |
 | `<$calc>1 234,5 + 1 000,5</$calc>` (FR decimal comma + space thousands) | <$calc>1 234,5 + 1 000,5</$calc> | <$calc out="fr-FR">1 234,5 + 1 000,5</$calc> |
