@@ -5,128 +5,112 @@ module-type: library
 \*/
 
 /*
- * format.js — result formatting
+ * format.js — result formatting 🎨
  *
  * Converts a mathjs evaluation result into a locale-aware display string.
  *
- * Exported:
- *   format(result, locale, options) → string
- *
  * Supported result types:
- *   - Plain JS number  → formatted with Intl.NumberFormat (respects locale)
- *   - mathjs Unit      → value + unit symbol, locale-aware number formatting
- *   - anything else    → delegated to math.format() (matrices, fractions…)
+ *   - Plain JS number  → Intl.NumberFormat (fully locale-aware)
+ *   - mathjs Unit      → numeric value + unit symbol (locale-aware number)
+ *   - anything else    → math.format() fallback (matrices, fractions…)
  *
  * Options:
  *   scientific {string}  "auto" | "always" | "never"
- *     auto   — scientific notation only for abs < 1e-6 or abs > 1e12
+ *     auto   — scientific notation only for |x| < 1e-6 or |x| > 1e12
  *     always — always use scientific notation
  *     never  — always use decimal notation
  *
- * Unit formatting strategy:
- *   mathjs is trusted for unit simplification and "to" conversions.
- *   result.toString() always produces the right value+unit string (e.g.
- *   "39.24 kJ", "6624 kWh", "120 mm"). We parse that string, reformat the
- *   numeric part with Intl, and reattach the unit.
+ * ── Unit formatting strategy ─────────────────────────────────────────
+ * mathjs.toString() on a Unit always produces the "best" string:
+ *   • simplifies compound dimensions  (kg·m²/s² → kJ)
+ *   • respects explicit "to" conversions  (460V*20A*30days to kWh → 6624 kWh)
+ *   • keeps the original unit for simple quantities  (100 kg → 100 kg)
+ * We parse that string, reformat the numeric part with Intl, and reattach
+ * the unit symbol.
  *
- *   Exception: for single-unit results without an explicit "to" conversion,
- *   mathjs may auto-reprefix the unit (e.g. "1234.5 kg" → "1.2345 Mg").
- *   In that case we revert to the original unit the user wrote.
+ * Exception 🚨: for single-component units WITHOUT an explicit "to"
+ * conversion, mathjs may auto-reprefix to a "cleaner" SI prefix
+ * (e.g. "1234.5 kg" → "1.2345 Mg").  We detect this via result.fixPrefix
+ * and revert to the unit the user originally wrote.
+ *
+ * Exported:
+ *   format(result, locale, options) → string
  */
 
-(function(){
+(function () {
+  "use strict";
 
-"use strict";
+  const math = require("$:/plugins/nikorion/math/modules/math.js");
 
-var math = require("$:/plugins/nikorion/math/modules/math.js");
+  // ── French-style scientific notation ──────────────────────────────────
+  // International standard uses × (U+00D7) and superscript — but since we
+  // output plain text, we write "×" literally and "10^n" with a caret. 🔬
+  // Example: 1.234e7 → "1,234 × 10^7"
+  function sciFR(x) {
+    const [mantissa, exp] = x.toExponential(3).split("e");
+    return `${mantissa.replace(".", ",")} \u00D7 10^${parseInt(exp, 10)}`;
+  }
 
-// ---------------------------------------------------------------------------
-// sciFR — French-style scientific notation  e.g. 1.234e7 → "1,234 × 10^7"
-// ---------------------------------------------------------------------------
+  // ── Unit result formatter ─────────────────────────────────────────────
+  // Returns null if result is not a mathjs Unit object.
+  function formatUnit(result, locale) {
+    if (!result?.units) return null;
 
-function sciFR(x) {
-	var parts    = x.toExponential(3).split("e");
-	var mantissa = parts[0].replace(".", ",");
-	var exponent = parseInt(parts[1], 10);
-	return mantissa + " \u00D7 10^" + exponent; // × = U+00D7
-}
+    // Let mathjs produce the canonical "value unit" string.
+    const str   = result.toString();
+    const match = str.match(/^(-?[\d.]+(?:e[+\-]?\d+)?)\s*(.*)$/i);
+    if (!match) return str; // unexpected format — return as-is
 
-// ---------------------------------------------------------------------------
-// formatUnit — format a mathjs Unit result (e.g. "9.81 m/s²", "6624 kWh")
-//
-// Returns null if the result is not a Unit object.
-// ---------------------------------------------------------------------------
+    let num         = parseFloat(match[1]);
+    let displayUnit = match[2].trim();
 
-function formatUnit(result, locale) {
+    // Revert auto-reprefixing for single-unit results without "to". 🔙
+    // (See module header for explanation.)
+    if (!result.fixPrefix && result.units.length === 1) {
+      const u        = result.units[0];
+      const origUnit = u.prefix.name + u.unit.name + (u.power !== 1 ? `^${u.power}` : "");
+      try {
+        num         = result.toNumber(origUnit);
+        displayUnit = origUnit;
+      } catch {
+        // toNumber() failed — keep mathjs toString() output
+      }
+    }
 
-	if (!result || !result.units) return null;
+    // U+202F = narrow no-break space, conventional separator before unit symbols.
+    const formatted = new Intl.NumberFormat(locale, { maximumFractionDigits: 12 })
+      .format(num).replace(/ /g, "\u202F");
 
-	// mathjs.toString() handles unit simplification and "to" conversions
-	// correctly in all cases — we only need to reformat the numeric part.
-	var str   = result.toString();
-	var match = str.match(/^(-?[\d.]+(?:e[+\-]?\d+)?)\s*(.*)$/i);
-	if (!match) return str; // unexpected format — return as-is
+    return displayUnit ? `${formatted}\u202F${displayUnit}` : formatted;
+  }
 
-	var num         = parseFloat(match[1]);
-	var displayUnit = match[2].trim();
+  // ─────────────────────────────────────────────────────────────────────
+  // format (exported) ✨
+  // ─────────────────────────────────────────────────────────────────────
+  exports.format = function format(result, locale, options = {}) {
 
-	// For single-unit results without an explicit "to" conversion, mathjs may
-	// auto-reprefix to a "prettier" SI prefix (e.g. kg → Mg for large values).
-	// Revert to the unit the user actually wrote to avoid surprising output.
-	if (!result.fixPrefix && result.units.length === 1) {
-		var u        = result.units[0];
-		var origUnit = u.prefix.name + u.unit.name;
-		if (u.power !== 1) origUnit += "^" + u.power;
-		try {
-			num         = result.toNumber(origUnit);
-			displayUnit = origUnit;
-		} catch(e) {
-			// toNumber() failed (should not happen) — keep mathjs toString output
-		}
-	}
+    // ── Plain number ───────────────────────────────────────────────────
+    if (typeof result === "number") {
+      const abs = Math.abs(result);
 
-	// Reformat the numeric part with Intl, then reattach the unit.
-	// U+202F (narrow no-break space) is the conventional separator before units.
-	var fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 12 });
-	var formattedNum = fmt.format(num).replace(/ /g, "\u202F");
+      if (options.scientific === "always") {
+        return locale === "fr-FR" ? sciFR(result) : result.toExponential(3);
+      }
+      if (options.scientific === "auto" && abs !== 0 && (abs < 1e-6 || abs > 1e12)) {
+        return locale === "fr-FR" ? sciFR(result) : result.toExponential(3);
+      }
 
-	return displayUnit ? formattedNum + "\u202F" + displayUnit : formattedNum;
-}
+      // "never" or "auto" with a normal-range value → decimal notation.
+      return new Intl.NumberFormat(locale, { maximumFractionDigits: 12 })
+        .format(result).replace(/ /g, "\u202F");
+    }
 
-// ---------------------------------------------------------------------------
-// format (exported)
-// ---------------------------------------------------------------------------
+    // ── mathjs Unit ────────────────────────────────────────────────────
+    const unitStr = formatUnit(result, locale);
+    if (unitStr !== null) return unitStr;
 
-exports.format = function(result, locale, options) {
-
-	options = options || {};
-
-	// --- Plain number ---
-	if (typeof result === "number") {
-
-		var abs = Math.abs(result);
-
-		if (options.scientific === "always") {
-			return locale === "fr-FR" ? sciFR(result) : result.toExponential(3);
-		}
-
-		// "auto": scientific notation only for very large or very small values.
-		if (options.scientific === "auto" && abs !== 0 && (abs < 1e-6 || abs > 1e12)) {
-			return locale === "fr-FR" ? sciFR(result) : result.toExponential(3);
-		}
-
-		// "never" or "auto" with a normal-range value: decimal notation.
-		return new Intl.NumberFormat(locale, {
-			maximumFractionDigits: 12
-		}).format(result).replace(/ /g, "\u202F");
-	}
-
-	// --- mathjs Unit ---
-	var unitStr = formatUnit(result, locale);
-	if (unitStr !== null) return unitStr;
-
-	// --- Fallback: matrices, fractions, complex numbers, etc. ---
-	return math.format(result, { notation: "fixed", precision: 12 });
-};
+    // ── Fallback: matrices, fractions, complex numbers… ────────────────
+    return math.format(result, { notation: "fixed", precision: 12 });
+  };
 
 })();

@@ -5,91 +5,70 @@ module-type: library
 \*/
 
 /*
- * cache.js — LRU result cache
+ * cache.js — LRU result cache 🗃️
  *
- * Caches mathjs evaluation results to avoid recomputing the same expression
- * multiple times (e.g. during repeated TiddlyWiki refreshes).
+ * Caches mathjs evaluation results to avoid recomputing identical
+ * expressions on every TiddlyWiki refresh cycle.
  *
- * Exported:
- *   get(key)          → result | null
- *   set(key, value)
- *   key(tid, expr, locale, mode) → string
- *   clear(tid)
+ * Implementation: a plain Map used as an ordered LRU store.
+ * Map preserves insertion order; on get() the entry is deleted and
+ * re-inserted at the end (= most recently used).  On set(), the first
+ * (= oldest / least-recently-used) entry is evicted when full.
  *
- * Implementation:
- *   A plain Map is used as an ordered LRU cache.
- *   Least-recently-used eviction: on get(), the entry is deleted and
- *   re-inserted at the end (Map preserves insertion order). On set(),
- *   the oldest entry is removed when the cache reaches MAX_SIZE.
+ * ── Why 500 entries? ─────────────────────────────────────────────────
+ * Each cache entry holds a mathjs result object (a number, Unit, Matrix…)
+ * which is lightweight (typically < 1 KB).  500 entries ≈ a few hundred KB
+ * at most — negligible for a modern browser.  The cache is useful whenever
+ * multiple <$calc> widgets share the same expression (e.g. in a table), or
+ * when TiddlyWiki triggers many refresh cycles.  A wiki with hundreds of
+ * <$calc> instances is realistic (a large financial or scientific notebook),
+ * so 500 is a safe ceiling without meaningful memory cost. 🧠
  *
  * Cache key format:
- *   "<tiddler title>::<input locale>::<scientific mode>::<normalised expression>"
- *   Including the tiddler title allows targeted invalidation when a tiddler
- *   is edited (see clear()).
+ *   "<tiddler-title>::<scientific-mode>::<normalised-expression>"
+ *   The tiddler title enables targeted invalidation when a tiddler changes.
+ *   The scientific mode is included because "auto" vs "never" can produce
+ *   different formatted output from the same raw result.
+ *
+ * Exported:
+ *   get(key)               → result | null
+ *   set(key, value)
+ *   key(tid, expr, mode)   → string
+ *   clear(tid)
  */
 
-(function(){
+(function () {
+  "use strict";
 
-"use strict";
+  const MAX_SIZE = 500;
+  const _cache   = new Map();
 
-var MAX_SIZE = 200;
+  /** Retrieve a cached value and refresh its LRU position. 🔄 */
+  exports.get = function get(key) {
+    if (!_cache.has(key)) return null;
+    const value = _cache.get(key);
+    _cache.delete(key);   // move to end (most-recently-used)
+    _cache.set(key, value);
+    return value;
+  };
 
-// The Map acts as an ordered LRU store.
-var _cache = new Map();
+  /** Store a value, evicting the oldest entry if the cache is full. */
+  exports.set = function set(key, value) {
+    if (_cache.size >= MAX_SIZE) _cache.delete(_cache.keys().next().value);
+    _cache.set(key, value);
+  };
 
-// ---------------------------------------------------------------------------
-// get — retrieve a cached value and refresh its LRU position.
-// Returns null on a cache miss.
-// ---------------------------------------------------------------------------
+  /** Build a cache key from evaluation context. 🔑 */
+  exports.key = function key(tid, expr, mode) {
+    return `${tid}::${mode}::${expr}`;
+  };
 
-exports.get = function(key) {
-
-	if (!_cache.has(key)) return null;
-
-	// Move to end (most recently used) by deleting and re-inserting.
-	var value = _cache.get(key);
-	_cache.delete(key);
-	_cache.set(key, value);
-
-	return value;
-};
-
-// ---------------------------------------------------------------------------
-// set — store a new value, evicting the oldest entry if the cache is full.
-// ---------------------------------------------------------------------------
-
-exports.set = function(key, value) {
-
-	if (_cache.size >= MAX_SIZE) {
-		// Delete the first (= oldest / least recently used) entry.
-		_cache.delete(_cache.keys().next().value);
-	}
-
-	_cache.set(key, value);
-};
-
-// ---------------------------------------------------------------------------
-// key — build a cache key from evaluation context.
-// ---------------------------------------------------------------------------
-
-exports.key = function(tid, expr, locale, mode) {
-	return tid + "::" + locale + "::" + mode + "::" + expr;
-};
-
-// ---------------------------------------------------------------------------
-// clear — remove all cached entries belonging to a given tiddler.
-// Called when a tiddler is modified, so stale results are not served.
-// ---------------------------------------------------------------------------
-
-exports.clear = function(tid) {
-
-	var prefix = tid + "::";
-
-	for (var k of _cache.keys()) {
-		if (k.indexOf(prefix) === 0) {
-			_cache.delete(k);
-		}
-	}
-};
+  /** Remove all entries belonging to a given tiddler. 🧹 */
+  exports.clear = function clear(tid) {
+    const prefix = tid + "::";
+    for (const k of _cache.keys()) {
+      if (k.startsWith(prefix)) _cache.delete(k);
+    }
+  };
 
 })();

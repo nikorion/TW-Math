@@ -1,0 +1,101 @@
+title: $:/plugins/nikorion/math/examples
+tags: $:/tags/BrowserStorage
+type: text/vnd.tiddlywiki
+
+! <$calc> widget — examples
+
+!! Basic arithmetic & number formatting
+
+| Expression | `out="en-US"` | `out="fr-FR"` |h
+| `<$calc>1 + 2 * 3</$calc>` | <$calc>1 + 2 * 3</$calc> | <$calc out="fr-FR">1 + 2 * 3</$calc> |
+| `<$calc>1 000 000 / 3</$calc>` (FR thousands space) | <$calc>1 000 000 / 3</$calc> | <$calc out="fr-FR">1 000 000 / 3</$calc> |
+| `<$calc>1 234,5 + 1 000,5</$calc>` (FR decimal comma + space thousands) | <$calc>1 234,5 + 1 000,5</$calc> | <$calc out="fr-FR">1 234,5 + 1 000,5</$calc> |
+| `<$calc>1,234.56 + 0.44</$calc>` (EN thousands comma + decimal point) | <$calc>1,234.56 + 0.44</$calc> | <$calc out="fr-FR">1,234.56 + 0.44</$calc> |
+| `<$calc>2^10</$calc>` | <$calc>2^10</$calc> | <$calc out="fr-FR">2^10</$calc> |
+| `<$calc>√144</$calc>` (√ unicode) | <$calc>√144</$calc> | |
+| `<$calc>∛27</$calc>` (∛ unicode) | <$calc>∛27</$calc> | |
+| `<$calc>2² + 3²</$calc>` (superscripts) | <$calc>2² + 3²</$calc> | |
+| `<$calc>½ + ¼</$calc>` (vulgar fractions) | <$calc>½ + ¼</$calc> | |
+| `<$calc>π * 2</$calc>` (π unicode) | <$calc>π * 2</$calc> | <$calc out="fr-FR">π * 2</$calc> |
+| `<$calc>τ / 2</$calc>` (τ = 2π) | <$calc>τ / 2</$calc> | |
+
+!! Scientific notation
+
+| Expression | Result |h
+| `<$calc scientific="always">1234</$calc>` | <$calc scientific="always">1234</$calc> |
+| `<$calc scientific="always" out="fr-FR">1234</$calc>` | <$calc scientific="always" out="fr-FR">1234</$calc> |
+| `<$calc scientific="auto">0.000001 / 10</$calc>` (auto triggers below 1e-6) | <$calc scientific="auto">0.000001 / 10</$calc> |
+| `<$calc scientific="never">0.000001 / 10</$calc>` | <$calc scientific="never">0.000001 / 10</$calc> |
+
+!! Mathematical functions & constants
+
+| Expression | Result |h
+| `<$calc>sin(π/6)</$calc>` | <$calc>sin(π/6)</$calc> |
+| `<$calc>cos(0)</$calc>` | <$calc>cos(0)</$calc> |
+| `<$calc>log(e^3)</$calc>` | <$calc>log(e^3)</$calc> |
+| `<$calc>log10(1000)</$calc>` | <$calc>log10(1000)</$calc> |
+| `<$calc>abs(−5)</$calc>` (− unicode minus) | <$calc>abs(−5)</$calc> |
+| `<$calc>round(π * 100) / 100</$calc>` | <$calc>round(π * 100) / 100</$calc> |
+| `<$calc>factorial(10)</$calc>` | <$calc>factorial(10)</$calc> |
+| `<$calc>gcd(48, 18)</$calc>` | <$calc>gcd(48, 18)</$calc> |
+| `<$calc>max(3, 7, 2, 9, 1)</$calc>` | <$calc>max(3, 7, 2, 9, 1)</$calc> |
+| `<$calc>√(2^8 + 3^4)</$calc>` | <$calc>√(2^8 + 3^4)</$calc> |
+
+!! Unicode operators
+
+| Expression | Meaning | Result |h
+| `<$calc>3 × 4</$calc>` | × multiplication | <$calc>3 × 4</$calc> |
+| `<$calc>10 ÷ 4</$calc>` | ÷ division | <$calc>10 ÷ 4</$calc> |
+| `<$calc>10 − 3</$calc>` | − minus (U+2212) | <$calc>10 − 3</$calc> |
+| `<$calc>3 · 4</$calc>` | · middle dot | <$calc>3 · 4</$calc> |
+| `<$calc>sin(45°)</$calc>` | ° degree | <$calc>sin(45°)</$calc> |
+| `<$calc>sin(45°) × √2</$calc>` | combined | <$calc>sin(45°) × √2</$calc> |
+
+!! Units & conversions
+
+| Expression | Result |h
+| `<$calc>9.81 m/s^2 * 80 kg</$calc>` (force) | <$calc>9.81 m/s^2 * 80 kg</$calc> |
+| `<$calc>9.81 m/s^2 * 80 kg * 10 m</$calc>` (energy, auto-simplifies to J/kJ) | <$calc>9.81 m/s^2 * 80 kg * 10 m</$calc> |
+| `<$calc>12 cm to mm</$calc>` | <$calc>12 cm to mm</$calc> |
+| `<$calc>100 degF to degC</$calc>` (temperature) | <$calc>100 degF to degC</$calc> |
+| `<$calc>37 degC to degF</$calc>` | <$calc>37 degC to degF</$calc> |
+| `<$calc>460 V * 20 A * 30 days to kWh</$calc>` (power × time) | <$calc>460 V * 20 A * 30 days to kWh</$calc> |
+| `<$calc>100 km/h to m/s</$calc>` | <$calc>100 km/h to m/s</$calc> |
+| `<$calc>1 atm to Pa</$calc>` | <$calc>1 atm to Pa</$calc> |
+| `<$calc>3 kg + 1500 g</$calc>` (mixed units, auto-simplifies) | <$calc>3 kg + 1500 g</$calc> |
+
+!! Complex numbers & special values
+
+| Expression | Result |h
+| `<$calc>2 + 3i</$calc>` | <$calc>2 + 3i</$calc> |
+| `<$calc>(2 + 3i) * (1 - i)</$calc>` | <$calc>(2 + 3i) * (1 - i)</$calc> |
+| `<$calc>abs(3 + 4i)</$calc>` (modulus) | <$calc>abs(3 + 4i)</$calc> |
+
+!! Variables via data tiddler
+
+''Prerequisite:'' create a tiddler titled `MyVars` with this content:
+
+```
+r: 5
+h: 10
+density: 2.7
+```
+
+Then:
+
+| Expression | Result |h
+| `<$calc data="MyVars">π * r^2</$calc>` (circle area) | <$calc data="MyVars">π * r^2</$calc> |
+| `<$calc data="MyVars">π * r^2 * h</$calc>` (cylinder volume) | <$calc data="MyVars">π * r^2 * h</$calc> |
+| `<$calc data="MyVars">density * π * r^2 * h</$calc>` (mass, kg·cm³ mixed) | <$calc data="MyVars">density * π * r^2 * h</$calc> |
+
+!! Error messages & debouncing
+
+The widget waits 100 ms after the last keystroke before showing an error,
+so transient states while typing are never displayed. Examples of errors:
+
+| Expression | Message |h
+| `<$calc>sqrt(</$calc>` | <$calc>sqrt(</$calc> |
+| `<$calc>1 / 0</$calc>` | <$calc>1 / 0</$calc> |
+| `<$calc>sqt(4)</$calc>` | <$calc>sqt(4)</$calc> |
+| `<$calc>1 +</$calc>` | <$calc>1 +</$calc> |
+| `<$calc silence="yes">not_a_function(1)</$calc>` (silence → blank) | <$calc silence="yes">not_a_function(1)</$calc> |
