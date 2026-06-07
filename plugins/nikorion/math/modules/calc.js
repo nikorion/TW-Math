@@ -61,7 +61,7 @@ module-type: widget
   const cache     = require("$:/plugins/nikorion/math/modules/cache.js");
   const scope     = require("$:/plugins/nikorion/math/modules/scope.js");
 
-  const ERROR_DELAY = 100; // ms — see module header
+  const ERROR_DELAY = 200; // ms — see module header
 
   // ─────────────────────────────────────────────────────────────────────
   // Constructor

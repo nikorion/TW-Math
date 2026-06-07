@@ -7,66 +7,73 @@ module-type: library
 /*
  * scope.js — variable scope builder 📦
  *
- * Parses a "data tiddler" (a plain-text tiddler whose content defines
- * named variables) and returns a scope object that can be passed directly
- * to math.evaluate(expr, scope).
+ * Builds a scope object (plain JS object) that is passed to
+ * math.evaluate(expr, scope) to inject named variables.
  *
- * ── Data tiddler format ───────────────────────────────────────────────
+ * ── Two modes, selected automatically ────────────────────────────────
  *
- * One variable per line.  Each line is:
+ * The widget attribute  data="<value>"  is resolved as follows:
  *
- *   name: expression
+ *  1. TIDDLER MODE  🗒️
+ *     If a tiddler whose title equals <value> exists in the wiki, its
+ *     text content is parsed line by line.  Each line must be:
  *
- * The expression on the right-hand side is evaluated by mathjs, so it can
- * reference any mathjs function, constant, unit, or a variable defined on
- * a previous line.  Examples:
+ *       name: expression
  *
- *   r: 3
- *   area: pi * r^2
- *   speed: 100 km/h
- *   f: a + sqrt(b)
+ *     The right-hand side is evaluated by mathjs (so it can reference
+ *     any mathjs function, constant, or a variable defined on an earlier
+ *     line).  One variable per line to avoid conflicts with expressions
+ *     that naturally contain commas (e.g. max(1, 2), [1, 2, 3]).
  *
- * Note: unlike the earlier "a:2,b:5" multi-var line format, we use ONE
- * variable per line to avoid conflicts with expressions that naturally
- * contain commas (e.g. max(1, 2), vectors [1, 2, 3]).
+ *     Example tiddler text:
+ *       r: 3
+ *       h: 10
+ *       area: pi * r^2
  *
- * Lines that are blank or do not contain a colon are silently ignored,
- * so comments can be added with any prefix that does not contain ":".
+ *  2. INLINE JSON MODE  📝
+ *     If no tiddler with that title is found, <value> is treated as a
+ *     JSON object body (without the surrounding braces).  The string is
+ *     wrapped in { } and parsed with JSON.parse().
  *
- * ─────────────────────────────────────────────────────────────────────
+ *     Keys must be quoted, values must be JSON literals (number, string,
+ *     boolean, null, array, nested object).  mathjs expressions are NOT
+ *     evaluated — the values reach the scope exactly as written.
+ *
+ *     Example attribute value:
+ *       data='"a":2,"b":5'
+ *       data='"label":"hello world","scale":1.5'
+ *
+ *     This mode is convenient for quick one-off values without creating
+ *     a dedicated tiddler.
+ *
+ * ── Error handling ───────────────────────────────────────────────────
+ * Both modes throw descriptive errors on bad input; the widget catches
+ * them and displays them subject to the normal ERROR_DELAY debounce. ⚠️
  *
  * Exported:
- *   parseDataTiddler(content, math) → scope object  (may throw on bad lines)
- *   buildScope(tiddlerTitle, wiki, math) → scope object | {}
+ *   buildScope(dataAttr, wiki, math) → scope object (may be {})
  */
 
 (function () {
   "use strict";
 
-  /**
-   * Parse raw tiddler text into a mathjs scope object. 🔍
-   * Variables are evaluated in order, so later lines can reference earlier ones.
-   *
-   * @param  {string} content  Raw tiddler text (newline-separated "name: expr" lines)
-   * @param  {object} math     The mathjs instance (passed in to avoid circular require)
-   * @returns {object}         Scope object ready for math.evaluate()
-   */
-  exports.parseDataTiddler = function parseDataTiddler(content, math) {
+  // ── Tiddler mode ──────────────────────────────────────────────────────
+  // Parse "name: expression" lines, evaluating each value with mathjs so
+  // that later lines can reference earlier variables. 🔗
+  function parseTiddlerScope(text, math) {
     const scope = {};
 
-    for (const rawLine of content.split("\n")) {
+    for (const rawLine of text.split("\n")) {
       const line = rawLine.trim();
-      if (!line) continue; // blank line
+      if (!line) continue;                    // blank line — skip
 
       const colonIdx = line.indexOf(":");
-      if (colonIdx < 1) continue; // no colon → treat as comment / ignore
+      if (colonIdx < 1) continue;            // no colon → treat as comment
 
       const name  = line.slice(0, colonIdx).trim();
       const value = line.slice(colonIdx + 1).trim();
       if (!name || !value) continue;
 
-      // Evaluate in the growing scope so forward references to earlier variables work.
-      // Errors are rethrown with the variable name for better diagnostics.
       try {
         scope[name] = math.evaluate(value, scope);
       } catch (e) {
@@ -75,29 +82,37 @@ module-type: library
     }
 
     return scope;
-  };
+  }
 
-  /**
-   * Convenience helper for use inside the widget. 🧩
-   * Looks up a tiddler by title in the TiddlyWiki wiki, reads its text,
-   * and delegates to parseDataTiddler.  Returns {} if the tiddler is not
-   * found or has no text content — the widget then evaluates without scope.
-   *
-   * @param  {string} title   Tiddler title (from the "data" widget attribute)
-   * @param  {object} wiki    TiddlyWiki wiki instance (this.wiki in a widget)
-   * @param  {object} math    The mathjs instance
-   * @returns {object}        Scope object (possibly empty)
-   */
-  exports.buildScope = function buildScope(title, wiki, math) {
-    if (!title) return {};
+  // ── Inline JSON mode ──────────────────────────────────────────────────
+  // Wrap the raw string in { } and delegate to JSON.parse(). 🔧
+  // Values are stored as-is (no mathjs evaluation).
+  function parseInlineScope(raw) {
+    try {
+      return JSON.parse(`{${raw}}`);
+    } catch (e) {
+      throw new Error(
+        `Invalid inline scope — expected JSON key-value pairs like "a":2,"b":5 ` +
+        `(${e.message})`
+      );
+    }
+  }
 
-    const tiddler = wiki.getTiddler(title);
-    if (!tiddler) return {};
+  // ─────────────────────────────────────────────────────────────────────
+  // buildScope (exported) 🚀
+  // ─────────────────────────────────────────────────────────────────────
+  exports.buildScope = function buildScope(dataAttr, wiki, math) {
+    if (!dataAttr) return {};
 
-    const text = tiddler.fields.text || "";
-    if (!text.trim()) return {};
+    // Mode 1: tiddler exists → parse line by line with mathjs evaluation.
+    const tiddler = wiki.getTiddler(dataAttr);
+    if (tiddler) {
+      const text = tiddler.fields.text ?? "";
+      return text.trim() ? parseTiddlerScope(text, math) : {};
+    }
 
-    return exports.parseDataTiddler(text, math);
+    // Mode 2: no tiddler found → treat the attribute value as inline JSON.
+    return parseInlineScope(dataAttr);
   };
 
 })();
