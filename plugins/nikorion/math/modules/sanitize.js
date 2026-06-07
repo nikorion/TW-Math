@@ -4,6 +4,28 @@ type: application/javascript
 module-type: library
 \*/
 
+/*
+ * sanitize.js — static expression validation
+ *
+ * Runs lightweight checks on a normalised expression BEFORE passing it to
+ * mathjs, in order to produce precise, user-friendly error messages.
+ *
+ * Exported:
+ *   sanitize(expr) → expr  (returns the expression unchanged if valid)
+ *
+ * Checks performed (in order):
+ *   1. Empty expression
+ *   2. Unbalanced parentheses — reports count or exact position
+ *   3. Trailing binary operator  (e.g. "1 +")
+ *   4. Leading binary operator   (e.g. "* 2")
+ *   5. Unknown identifiers — every alphabetic token must exist in mathjs.
+ *      If the token is close to a known symbol (Levenshtein distance ≤ 2,
+ *      adaptive threshold), a "did you mean?" suggestion is appended.
+ *
+ * Note: this module is NOT a security layer. TiddlyWiki runs locally and
+ * expressions are always authored by the user themselves.
+ */
+
 (function(){
 
 "use strict";
@@ -11,202 +33,175 @@ module-type: library
 var math = require("$:/plugins/nikorion/math/modules/math.js");
 
 // ---------------------------------------------------------------------------
+// _levenshtein — edit distance between two strings (classic DP, O(m×n))
+// ---------------------------------------------------------------------------
 
-function add(errors, obj) {
-	errors.push(obj);
-}
-
-function isOperator(c) {
-	return /[+\-*/^%]/.test(c);
+function _levenshtein(a, b) {
+	var m = a.length, n = b.length;
+	var dp = [];
+	for (var i = 0; i <= m; i++) {
+		dp[i] = [i];
+		for (var j = 1; j <= n; j++) {
+			dp[i][j] = i === 0 ? j
+				: j === 0 ? i
+				: a[i - 1] === b[j - 1] ? dp[i - 1][j - 1]
+				: 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+		}
+	}
+	return dp[m][n];
 }
 
 // ---------------------------------------------------------------------------
-// MAIN
+// _suggest — find the closest mathjs symbol to an unknown token.
+//
+// Adaptive distance threshold:
+//   ≤ 2 chars  → no suggestion (too short, too ambiguous)
+//   3 chars    → max distance 1, and the symbol must share the same first letter
+//   4+ chars   → max distance 2
+//
+// Tie-breaking priority (lower = better):
+//   1. Same first letter as the token
+//   2. Symbol is an exact prefix of the token (e.g. "log" in "logg")
+//   3. Smallest absolute length difference
+//   4. Shortest symbol overall
+//
+// Returns the best matching symbol name, or null if nothing is close enough.
+// ---------------------------------------------------------------------------
+
+var _mathSymbols = null; // lazy-initialised cache of mathjs symbol names
+
+function _suggest(token) {
+
+	// Build the symbol list once from the live mathjs object.
+	if (!_mathSymbols) {
+		_mathSymbols = Object.keys(math).filter(function(k) {
+			return /^[a-zA-Z]/.test(k);
+		});
+	}
+
+	var len = token.length;
+	var tok = token.toLowerCase();
+
+	if (len <= 2) return null;
+
+	var maxDist = len === 3 ? 1 : 2;
+
+	var best     = null;
+	var bestDist = Infinity;
+	var bestTie  = Infinity;
+
+	for (var i = 0; i < _mathSymbols.length; i++) {
+		var sym  = _mathSymbols[i];
+		var syml = sym.toLowerCase();
+
+		// For 3-char tokens, skip symbols that don't share the first letter —
+		// otherwise almost any 3-letter word would match something.
+		if (len === 3 && syml[0] !== tok[0]) continue;
+
+		var d = _levenshtein(tok, syml);
+		if (d > maxDist) continue;
+
+		// Tie-breaking score (lower = preferred)
+		var sameStart = syml[0] === tok[0] ? 0 : 1;          // same first letter
+		var isPrefix  = tok.indexOf(syml) === 0 ? 0 : 1;     // symbol is prefix of token
+		var lenDiff   = Math.abs(sym.length - len);           // length proximity
+		var symLen    = sym.length;                           // shorter symbol wins
+		var tie       = sameStart * 1000000 + isPrefix * 10000 + lenDiff * 100 + symLen;
+
+		if (d < bestDist || (d === bestDist && tie < bestTie)) {
+			bestDist = d;
+			bestTie  = tie;
+			best     = sym;
+		}
+	}
+
+	return best;
+}
+
+// ---------------------------------------------------------------------------
+// _checkParens — verify parenthesis balance with exact position reporting
+// ---------------------------------------------------------------------------
+
+function _checkParens(expr) {
+
+	var depth = 0;
+
+	for (var i = 0; i < expr.length; i++) {
+		if (expr[i] === "(") {
+			depth++;
+		} else if (expr[i] === ")") {
+			depth--;
+			if (depth < 0) {
+				throw new Error(
+					"Unexpected closing parenthesis at position " + (i + 1) +
+					" — no matching opening parenthesis"
+				);
+			}
+		}
+	}
+
+	if (depth > 0) {
+		throw new Error(
+			"Unclosed parenthesis: " + depth + " opening " +
+			(depth === 1 ? "parenthesis is" : "parentheses are") +
+			" never closed"
+		);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// sanitize (exported)
 // ---------------------------------------------------------------------------
 
 exports.sanitize = function(expr) {
 
-	var errors = [];
-
-	if (!expr || expr.trim() === "") {
-		add(errors, {
-			code: "E000",
-			type: "empty",
-			message: "Empty expression",
-			start: 0,
-			end: 0,
-			severity: 3
-		});
-		return errors;
+	// 1. Empty expression
+	if (expr.trim() === "") {
+		throw new Error("Empty expression");
 	}
 
-	// -----------------------------------------------------------------------
-	// 1. PARENTHESES CHECK
-	// -----------------------------------------------------------------------
+	// 2. Unbalanced parentheses
+	_checkParens(expr);
 
-	var stack = [];
-
-	for (var i = 0; i < expr.length; i++) {
-
-		if (expr[i] === "(") {
-			stack.push(i);
-		}
-
-		if (expr[i] === ")") {
-
-			if (stack.length === 0) {
-				add(errors, {
-					code: "E101",
-					type: "syntax",
-					message: "Unexpected closing parenthesis",
-					start: i,
-					end: i + 1,
-					severity: 3
-				});
-			} else {
-				stack.pop();
-			}
-		}
+	// 3. Trailing binary operator
+	var trailingOp = expr.match(/([+\-*/^%])\s*$/);
+	if (trailingOp) {
+		throw new Error(
+			"Expression ends with operator \"" + trailingOp[1] +
+			"\" — a value is expected after it"
+		);
 	}
 
-	for (var j = 0; j < stack.length; j++) {
-		add(errors, {
-			code: "E102",
-			type: "syntax",
-			message: "Unclosed parenthesis",
-			start: stack[j],
-			end: stack[j] + 1,
-			severity: 3
-		});
+	// 4. Leading binary operator (* / ^ cannot be unary; + and - can)
+	var leadingOp = expr.match(/^\s*([*/^%])/);
+	if (leadingOp) {
+		throw new Error(
+			"Expression starts with operator \"" + leadingOp[1] +
+			"\" — a value is expected before it"
+		);
 	}
 
-	// -----------------------------------------------------------------------
-	// 2. LEADING OPERATOR
-	// -----------------------------------------------------------------------
-
-	var trimmed = expr.trim();
-	var first = trimmed[0];
-
-	if (isOperator(first) && first !== "+" && first !== "-") {
-		add(errors, {
-			code: "E201",
-			type: "syntax",
-			message: "Expression starts with invalid operator",
-			start: 0,
-			end: 1,
-			severity: 3
-		});
-	}
-
-	// -----------------------------------------------------------------------
-	// 3. TRAILING OPERATOR
-	// -----------------------------------------------------------------------
-
-	var last = trimmed[trimmed.length - 1];
-
-	if (isOperator(last)) {
-		add(errors, {
-			code: "E202",
-			type: "syntax",
-			message: "Expression ends with operator",
-			start: expr.lastIndexOf(last),
-			end: expr.length,
-			severity: 3
-		});
-	}
-
-	// -----------------------------------------------------------------------
-	// 4. TOKEN ANALYSIS (functions, constants, units)
-	// -----------------------------------------------------------------------
-
+	// 5. Unknown identifiers
 	var tokens = expr.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [];
 
-	for (var k = 0; k < tokens.length; k++) {
+	for (var i = 0; i < tokens.length; i++) {
+		var token = tokens[i];
 
-		var t = tokens[k];
-		var pos = expr.indexOf(t);
+		// Accept known mathjs symbols (functions, constants…)
+		if (typeof math[token] !== "undefined") continue;
 
-		// ------------------------------------------------------------
-		// 1. math.js functions / constants
-		// ------------------------------------------------------------
-		if (typeof math[t] !== "undefined") continue;
+		// Accept known mathjs units (kg, m, s, km/h…) — units are not properties
+		// of the math object but are handled internally by the mathjs parser.
+		if (math.Unit.isValuelessUnit(token)) continue;
 
-		// ------------------------------------------------------------
-		// 2. math.js units (IMPORTANT FIX)
-		// ------------------------------------------------------------
-		var isUnit = false;
+		var suggestion = _suggest(token);
+		var msg = "Unknown function or constant: \"" + token + "\"";
+		if (suggestion) msg += " — did you mean \"" + suggestion + "\"?";
 
-		try {
-			if (math.unit) {
-				// test direct unit existence
-				var u = math.unit("1 " + t);
-				if (u) isUnit = true;
-			}
-		} catch (e) {
-			isUnit = false;
-		}
-
-		if (isUnit) continue;
-
-		// ------------------------------------------------------------
-		// 3. fallback safe whitelist pattern
-		// ------------------------------------------------------------
-		if (/^[a-zA-Z]+$/.test(t)) {
-
-			// second chance (some builds expose units differently)
-			try {
-				if (math.createUnit && math.unit("1 " + t)) {
-					continue;
-				}
-			} catch (e) {}
-		}
-
-		// ------------------------------------------------------------
-		// 4. UNKNOWN IDENTIFIER → ERROR
-		// ------------------------------------------------------------
-		add(errors, {
-			code: "E301",
-			type: "unknown",
-			token: t,
-			message: "Unknown identifier: \"" + t + "\"",
-			start: pos,
-			end: pos + t.length,
-			severity: 2
-		});
+		throw new Error(msg);
 	}
 
-	// -----------------------------------------------------------------------
-	// 5. DEDUP + OVERLAP CLEANUP
-	// -----------------------------------------------------------------------
-
-	var filtered = [];
-
-	for (var i = 0; i < errors.length; i++) {
-
-		var e = errors[i];
-		var keep = true;
-
-		for (var j = 0; j < filtered.length; j++) {
-
-			var f = filtered[j];
-
-			if (e.start === f.start &&
-				e.end === f.end &&
-				e.type === f.type) {
-
-				if (e.severity > f.severity) {
-					filtered[j] = e;
-				}
-
-				keep = false;
-				break;
-			}
-		}
-
-		if (keep) filtered.push(e);
-	}
-
-	return filtered;
+	return expr;
 };
 
 })();
