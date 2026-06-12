@@ -57,9 +57,8 @@ module-type: library
  *       No nested objects — {a:{x:1}} is not supported.
  *
  *     • Number values are passed through normalize() before evaluation,
- *       so thousands spaces ("1 000 000") and stray-space scientific
- *       notation ("5 e9") work.  Decimal commas are NOT supported —
- *       EN notation only, like everywhere else on input.
+ *       so thousands spaces ("1 000 000") work.  Decimal commas are
+ *       NOT supported — EN notation only, like everywhere else on input.
  *
  *     • Legacy math.* prefix still accepted:  math.unit(…) → unit(…),
  *       math.BigNumber(…) → bignumber(…).  unit() arguments are
@@ -153,10 +152,10 @@ module-type: library
   /**
    * Detect and normalize plain numeric values in the raw object literal
    * string before evaluation.  This makes thousands spaces ("1 000 000")
-   * and stray-space scientific notation ("5 e9") work in inline values —
-   * mathjs alone would reject "1 000 000" (implicit multiplication of
-   * number literals).  ⚠️ Decimal commas are NOT supported: input is EN
-   * notation only, consistent with the rest of the plugin.
+   * work in inline values — mathjs alone would reject "1 000 000" (implicit
+   * multiplication of number literals).  ⚠️ Decimal commas are NOT
+   * supported: input is EN notation only, consistent with the rest of the
+   * plugin.
    *
    * Strategy: find every value that looks like a plain number literal
    * and pass it through normalize().  Values that are not bare numbers
@@ -202,7 +201,7 @@ module-type: library
     if (!s.startsWith("{")) s = "{" + s;
     if (!s.endsWith("}"))   s = s + "}";
 
-    // Normalize plain number literals (thousands spaces, "5 e9").
+    // Normalize plain number literals (thousands spaces).
     s = normalizeInlineNumbers(s, normalizeModule, sanitizeModule, math);
 
     // Legacy math.* prefix → bare mathjs function names.

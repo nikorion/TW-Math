@@ -12,7 +12,7 @@ Expect breaking changes, unstable behavior, and ongoing API adjustments.
 A lightweight TiddlyWiki widget integrating Math.js for inline expression
 evaluation with:
 
-- FR/EN locale-aware input parsing and output formatting
+- locale-aware output formatting (EN/FR/any BCP-47)
 - configurable numeric precision (float or BigNumber)
 - unit-aware output with automatic simplification
 - LRU cache for performance
@@ -33,7 +33,6 @@ Accepts EN notation out of the box — decimal point, thousands space, scientifi
 | `1.2 + 3.4` | decimal point |
 | `1 000 000 / 3` | thousands space |
 | `5e9` · `1.5e-3` | scientific notation |
-| `5 e9` | stray space auto-normalised |
 
 ### Math.js engine
 
@@ -236,8 +235,7 @@ Key rules:
 
 ### Scientific notation input
 
-Standard `5e9`, `1.5e-3`, `2.5e+6` notation is fully supported.  
-A stray space (`5 e9`) is normalized to `5e9` automatically.
+Standard `5e9`, `1.5e-3`, `2.5e+6` notation is fully supported.
 
 > Do **not** write `5 * e9` — that means 5 times an undefined symbol `e9`.
 

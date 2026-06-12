@@ -31,8 +31,7 @@ module-type: library
  *  4. Superscript digits  x² → x^2,  a³ → a^3
  *  5. Unicode operators   × → *,  · → *,  ÷ → /,  − → -,  – → -
  *  6. Degree symbol       90° → 90 deg
- *  7. Scientific spacing  5 e9 → 5e9
- *  8. Thousands spaces    1 000 000 → 1000000
+ *  7. Thousands spaces    1 000 000 → 1000000
  *     (U+0020, U+00A0, U+2009, U+202F between digits only)
  *
  * Exported:
@@ -129,12 +128,7 @@ module-type: library
     // ── 6. Degree symbol → mathjs 'deg' unit ───────────────────────────
     s = s.replace(/(\d)\u00B0/g, "$1 deg"); // °
 
-    // ── 7. Scientific notation with stray space ────────────────────────
-    // "5 e9" or "5 e-3" → "5e9" / "5e-3"
-    // Never touches standalone 'e' (Euler constant) like "e + 9". 🔬
-    s = s.replace(/(\d)\s+[eE]([+\-]?\d)/g, "$1e$2");
-
-    // ── 8. Thousands spaces → remove ───────────────────────────────────
+    // ── 7. Thousands spaces → remove ───────────────────────────────────
     s = removeThousandsSpaces(s);
 
     return s;
