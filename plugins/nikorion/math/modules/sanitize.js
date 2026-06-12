@@ -7,24 +7,19 @@ module-type: library
 /*
  * sanitize.js — static expression validation 🛡️
  *
- * Runs lightweight structural checks on a normalised expression BEFORE
- * passing it to mathjs, producing precise, user-friendly error messages
- * for common mistakes.
+ * Runs a pre-evaluation pass to catch unknown identifiers before mathjs
+ * sees the expression, producing a "did you mean?" suggestion when the
+ * token is close to a known name.
+ *
+ * Structural errors (unbalanced parentheses, leading/trailing operators)
+ * are intentionally left to mathjs — math.parse() / math.evaluate() already
+ * detect them and throw precise messages that errors.rewriteError() reformats.
  *
  * Note: this is NOT a security layer — TiddlyWiki runs entirely in the
  * user's own browser; expressions are always authored by the user. 🏠
  *
- * Checks (in order):
- *   1. Empty expression
- *   2. Unbalanced parentheses — reports exact position on mismatch
- *   3. Trailing binary operator  e.g. "1 +"
- *   4. Leading binary operator   e.g. "* 2"  (unary +/- are allowed)
- *   5. Unknown identifiers — every alphabetic token must be a known mathjs
- *      symbol or unit.  A Levenshtein-based "did you mean?" suggestion is
- *      appended when the token is close to a known name.
- *
  * Exported:
- *   sanitize(expr, math) → expr  (unchanged if valid, throws otherwise)
+ *   sanitize(expr, math, varScope) → expr  (unchanged if valid, throws otherwise)
  */
 
 (function () {
@@ -77,14 +72,14 @@ module-type: library
 
     for (const sym of mathSymbols) {
       const syml = sym.toLowerCase();
-      if (len === 3 && syml[0] !== tok[0]) continue; // first-letter guard for short tokens
+      if (len === 3 && syml[0] !== tok[0]) continue;
 
       const d = levenshtein(tok, syml);
       if (d > maxDist) continue;
 
       const tie =
         (syml[0] !== tok[0] ? 1_000_000 : 0) +
-        (tok.indexOf(syml) !== 0 ? 10_000 : 0) +  // prefix bonus
+        (tok.indexOf(syml) !== 0 ? 10_000 : 0) +
         Math.abs(sym.length - len) * 100 +
         sym.length;
 
@@ -95,47 +90,18 @@ module-type: library
     return best;
   }
 
-  // ── Parenthesis balance check ─────────────────────────────────────────
-  function checkParens(expr) {
-    let depth = 0;
-    for (let i = 0; i < expr.length; i++) {
-      if      (expr[i] === "(") depth++;
-      else if (expr[i] === ")") {
-        if (--depth < 0) throw new Error(
-          `Unexpected closing parenthesis at position ${i + 1} — no matching opening parenthesis`
-        );
-      }
-    }
-    if (depth > 0) throw new Error(
-      `Unclosed parenthesis: ${depth} opening ${depth === 1 ? "parenthesis is" : "parentheses are"} never closed`
-    );
-  }
-
   // ─────────────────────────────────────────────────────────────────────
   // sanitize (exported) ✅
   // ─────────────────────────────────────────────────────────────────────
   exports.sanitize = function sanitize(expr, math, varScope = {}) {
-    if (!expr.trim()) throw new Error("Empty expression");
+    // Strip scientific-notation literals so "e" in "5e9" is never treated
+    // as an identifier token.
+    const strippedForTokens = expr.replace(/\d+\.?\d*[eE][+\-]?\d+/g, "0");
 
-    checkParens(expr);
-
-    // Trailing binary operator
-    const trailing = expr.match(/([+\-*/^%])\s*$/);
-    if (trailing) throw new Error(
-      `Expression ends with operator "${trailing[1]}" — a value is expected after it`
-    );
-
-    // Leading binary operator (* / ^ are never unary; + and - can be)
-    const leading = expr.match(/^\s*([*/^%])/);
-    if (leading) throw new Error(
-      `Expression starts with operator "${leading[1]}" — a value is expected before it`
-    );
-
-    // Unknown identifiers 🔍
-    for (const token of (expr.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? [])) {
-      if (typeof math[token] !== "undefined") continue;          // known mathjs symbol
-      if (math.Unit.isValuelessUnit(token))   continue;          // known mathjs unit
-      if (token in varScope)                  continue;          // user-defined variable 👤
+    for (const token of (strippedForTokens.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? [])) {
+      if (typeof math[token] !== "undefined") continue;        // known mathjs symbol
+      if (math.Unit?.isValuelessUnit(token))  continue;        // known mathjs unit
+      if (token in varScope)                  continue;        // user-defined variable 👤
       const hint = suggest(token, math);
       throw new Error(
         `Unknown function or constant: "${token}"` +

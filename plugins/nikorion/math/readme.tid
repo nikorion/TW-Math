@@ -1,167 +1,282 @@
 title: $:/plugins/nikorion/math/readme
 type: text/vnd.tiddlywiki
 
-!! 🧮 Math.js Widget
-
-[img[https://img.shields.io/badge/status-experimental-orange]]
-
-This project is under active development and is not production-ready.
-
-Expect breaking changes, unstable behavior, and ongoing API adjustments.
-
-!! 📌 Overview
+!! Overview
 
 A lightweight TiddlyWiki widget integrating Math.js for inline expression evaluation.
 
-!! ⚙️ Features
+Key capabilities:
 
-!!! 🌍 Locale-aware parsing
-* FR/EN numeric formats
-* auto-detection
-
-!!! 🧮 Math.js engine
-* arithmetic
-* functions (sin, cos, sqrt, log)
-* fractions
-* units (basic support)
-
-!!! 📐 Scientific notation
-
-<$codeblock code="""<$calc scientific="auto">0.00000012</$calc>"""/>
-
-;Modes:
-* auto
-* always
-* never
-
-!!! 🇫🇷 French formatting
-* 1 000 000 spacing
-* decimal comma support
-* × 10^n scientific style
-
-!!! ⚡ Performance
-* LRU cache
-* lazy evaluation
-* optimized refresh cycle
-
-!!! 🔒 Safety
-* expression sandboxing
-* function whitelist
-* avoids unsafe JS access
+* locale-aware output formatting (EN/FR/any BCP-47)
+* input in standard EN notation (decimal point, scientific notation)
+* configurable numeric precision: native float (default) or BigNumber (64 / 128 / 256 significant digits)
+* unit-aware output with automatic simplification and explicit conversion
+* LRU result cache for performance
+* static expression validation with friendly error messages and "did you mean?" suggestions
+* KaTeX rendering for results and formulas (automatic if KaTeX plugin is installed)
 
 ---
 
-!! 🧩 Usage
+!! Attributes
+
+|!Attribute |!Values |!Default |!Description |
+| `show` |`result` · `formula` · `full` |`result` |What to display — result only, formula only, or both |
+| `mode` |`inline` · `block` |`inline` |KaTeX display mode — inline or centred block |
+| `locale` |`en` · `en-US` · `fr` · `fr-FR` · BCP-47 |`en` |Output number format (separators, decimal symbol) |
+| `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
+| `precision` |positive integer |6 |Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
+| `calcPrec` |`float` · `64` · `128` · `256` |`float` |Arithmetic precision mode — see warning below |
+| `scope` |tiddler title or `{a:1, b:2}` |— |Variable scope injected into the expression |
+| `silence` |`yes` · `no` |`no` |Suppress expression error display |
+
+!!! `show` attribute
+
+;`show="result"` (default)
+:Evaluates the expression and renders the numeric result via KaTeX (or plain text if KaTeX unavailable).
+
+;`show="formula"`
+:Converts the expression to LaTeX via `math.parse().toTex()` and renders it via KaTeX. The expression is ''not'' evaluated. `notation`, `precision`, `calcPrec`, and `scope` are ignored.
+
+;`show="full"`
+:Renders the formula and its evaluated result together: `formula = result` in a single KaTeX block.
+
+!!! `mode` attribute
+
+;`mode="inline"` (default)
+:KaTeX renders inline with surrounding text.
+
+;`mode="block"`
+:KaTeX renders as a centred display-mode formula (larger, on its own line).
+
+!!! `notation` attribute
+
+|!Value |!Behaviour |!Default `precision` |
+| `auto` |decimal for most values; scientific for |x| < 1e-6 or |x| > 1e12 |6 |
+| `fixed` |always decimal |6 |
+| `scientific` |always scientific: `1.414 \times 10^{3}` |6 |
+| `engineering` |exponent always a multiple of 3 |6 |
+| `bin` |binary integer, prefixed `0b` — e.g. `0b101010` |ignored |
+| `oct` |octal integer, prefixed `0o` — e.g. `0o52` |ignored |
+| `hex` |hexadecimal integer, prefixed `0x` — e.g. `0xff` |ignored |
+
+''bin/oct/hex rules:''
+
+* `locale` and `precision` are ignored — output is always plain ASCII.
+* BigNumber results are converted via `toNumber()` before formatting.
+* Negative values are accepted: `-42` → `-0b101010`.
+* Non-integer values are truncated silently by math.js: `3.7` → `0b11`.
+* Unit results produce an error — extract the numeric value first with `number(expr, unit)`.
+* KaTeX output uses `\texttt{}` for monospace rendering.
+
+All decimal/scientific modes default to 6 — readable without being lossy for most scientific/technical uses. Math.js generic default is 14 (matches IEEE 754 double precision but too verbose for a display widget). The `precision` attribute overrides this per widget.
+
+!!! When is `silence="yes"` useful?
+
+`silence="yes"` suppresses errors that arise from the ''expression itself'' — not from widget configuration. It is useful when:
+
+* The expression depends on a TiddlyWiki variable (`<<myVar>>`) not yet defined.
+* A table where some cells have no value yet, causing expressions to fail temporarily.
+* A live-preview context where the expression is typed incrementally.
+
+The 200 ms debounce already covers momentary invalidity while typing. `silence` covers cases where the expression remains invalid even after stabilising — showing nothing is better than a permanent error message.
+
+---
+
+!! Input notation
+
+Input must use EN/international notation:
+
+|!Format |!Example |
+|Decimal point |`3.14` |
+|Thousands space (U+0020, U+00A0, U+2009, U+202F) |`1 000 000` |
+|Scientific notation |`5e9` · `1.5e-3` · `2.5e+6` |
+|Scientific with stray space |`5 e9` (auto-normalised to `5e9`) |
+
+⚠️ Do ''not'' write `5 * e9` — that means 5 times the undefined symbol `e9`.
+
+---
+
+!! Unicode operators and symbols
+
+|!Symbol |!Meaning |!Normalised to |
+|`×` (U+00D7) |multiplication |`*` |
+|`·` (U+00B7) |middle dot |`*` |
+|`÷` (U+00F7) |division |`/` |
+|`−` (U+2212) |minus sign |`-` |
+|`–` (U+2013) |en dash |`-` |
+|`°` (U+00B0) |degree |` deg` |
+|`√x` |square root |`sqrt(x)` |
+|`∛x` |cube root |`cbrt(x)` |
+|`π` |pi |`pi` |
+|`τ` |tau = 2π |`(2*pi)` |
+|`∞` |infinity |`Infinity` |
+|`ℯ` (U+212F) |Euler's number |`e` |
+|`x²` `x³` |superscript exponent |`x^2` `x^3` |
+|`½` `¼` `¾` … |vulgar fractions |`(1/2)` `(1/4)` `(3/4)` … |
+
+---
+
+!! Usage
 
 !!! Basic
 
-<$codeblock code="""<$calc>1 + 2 * 3</$calc>"""/>
+<$codeblock code="<$calc>1 + 2 * 3</$calc>"/>
 
-!!! Locale control
+!!! Locale
 
-<$codeblock code="""<$calc in="auto">1,2 × 10^3</$calc>"""/>
+Controls output decimal separator, thousands separator, and digit grouping.
 
-; Options:
-* auto
-* fr-FR
-* en-US
+<$codeblock code="""<$calc locale="fr-FR">1234567.89</$calc>"""/>
 
-!!! Output control
+Short aliases: `en` → `en-US`, `fr` → `fr-FR`. Any valid BCP-47 tag works.
 
-<$codeblock code="""<$calc out="fr-FR">1234.56</$calc>"""/>
+!!! Show modes
 
-!!! Scientific mode
+<$codeblock code="""<$calc show="result">sqrt(2)</$calc>
+<$calc show="formula">sqrt(2)</$calc>
+<$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>"""/>
 
-<$codeblock code="""<$calc scientific="always">0.00000012</$calc>"""/>
+!!! Block display
 
----
+<$codeblock code="""<$calc mode="block">pi * r^2</$calc>"""/>
 
-!! 📦 Installation
+!!! Silence errors
 
-# Copy plugin into TiddlyWiki plugins folder `./plugins`
-# Enable plugin in `tiddlywiki.info`
-# Reload wiki
+<$codeblock code="""<$calc silence="yes">bad expression</$calc>"""/>
 
-Or 
+!!! Notation
 
-# Drag and Drop
+<$codeblock code="""<$calc notation="scientific">0.00000012</$calc>
+<$calc notation="engineering" locale="fr">1234567</$calc>
+<$calc notation="fixed" precision="2">3.14159</$calc>
+<$calc notation="bin">42</$calc>
+<$calc notation="oct">42</$calc>
+<$calc notation="hex">255</$calc>"""/>
 
----
+!!! Variable scope — tiddler mode
 
-!! 🔗 Links
+<$codeblock code="""<$calc scope="MyVars">pi * r^2</$calc>"""/>
 
-* GitHub repository : https://github.com/nikorion/TW-Math
-* Live demo : soon
+`MyVars` is a tiddler with one `name: expression` per line, evaluated in order:
 
-!! 🧠 Technical notes
+```
+r: 5
+h: 10
+vol: pi * r^2 * h
+```
 
-* Built on Math.js
-* Uses widget lifecycle (render / refresh)
-* No dependencies beyond Math.js
-* Designed for single-file wiki usage
+!!! Variable scope — inline mode
 
----
+<$codeblock code="""<$calc scope="{r: 3, h: 10}">pi * r^2 * h</$calc>"""/>
 
-!! ⚠️ Limitations
+Key rules: valid mathjs identifiers (`[a-zA-Z_$][a-zA-Z0-9_$]*`), values in EN notation, pairs separated by commas, `math.unit(5 cm)` auto-quoted.
 
-* Not a spreadsheet engine
-* No dependency graph
-* Sandbox is heuristic (not secure VM)
-* Locale detection is probabilistic
+!!! BigNumber precision
 
----
+<$codeblock code="""<$calc calcPrec="64">1e13 + 1.23456789 - 1e13</$calc>"""/>
 
-!! 🚧 Roadmap
+With `calcPrec="64/128/256"`, all numeric literals are automatically BigNumber — no need for `math.bignumber()`.
 
-* improved unit formatting
-* stricter sandbox mode
-* LaTeX output option
-* performance profiling tools
+!!! Units
 
----
-
-!! 🕰️ Version History
-
-!!! v0.1.0 (Experimental)
-
-;2026 06 06
-
-Initial public release and repository creation.
-
-This version represents the first implementation of the plugin and serves as the foundation for future development.
-
+<$codeblock code="""<$calc>9.81 m/s^2 * 80 kg</$calc>
+<$calc>460 V * 20 A * 30 days to kWh</$calc>
+<$calc>100 degF to degC</$calc>"""/>
 
 ---
 
-!! 🙏 Credits
+!! Reserved identifiers
 
-This plugin is based on the work of mklauber and the original Tiddly Math.js plugin:
+mathjs pre-defines two single-letter constants:
 
-* https://github.com/mklauber/tiddly-mathjs
+|!Identifier |!mathjs meaning |
+| `e` |Euler's number — 2.718281828… (also `ℯ` U+212F) |
+| `i` |imaginary unit — √−1 |
 
-While this project has evolved beyond the original implementation, its initial structure, TiddlyWiki integration patterns, and overall approach were inspired by that work.
-
-Mathematical expression parsing and evaluation are provided by Math.js, created by Jos de Jong and maintained by the Math.js community:
-
-* https://github.com/josdejong/mathjs
-
-Many thanks to Jos de Jong and all Math.js contributors for their continued work on one of the most comprehensive mathematics libraries available for JavaScript.
-
-!!! Icon
-
-:Source: https://www.svgrepo.com/svg/228720/calculating-maths
-:Provider: SVG Repo (https://www.svgrepo.com/)
-:License: see SVG Repo terms of use
+Defining `e` or `i` in the `scope` silently shadows these constants. Use `euler`, `base`, `idx`, `imag`, etc. instead.
 
 ---
 
-!! 🤖 Development Notes
+!! Precision and performance
 
-This project was developed with the assistance of OpenAI's ChatGPT for code review, technical discussions, refactoring ideas, and documentation support.
+!!! Default mode: float
+
+By default the widget uses native IEEE 754 `float64` (~16 significant digits). The formatter caps output at `precision` decimal places, which suppresses most float artefacts:
+
+|!Expression |!Raw float value |!Displayed |
+| `0.1 + 0.2` |`0.30000000000000004` |`0.3` ✅ |
+| `9.81 * 80` |`784.8000000000001` |`784.8` ✅ |
+
+!!! When to use BigNumber
+
+Switch only when float produces a ''visibly wrong result'':
+
+|!Situation |!Example |!float |!BigNumber |
+|Catastrophic cancellation |`1e13 + 1.23456789 - 1e13` |`1.234375` ❌ |`1.23456789` ✅ |
+|Subtraction residual |`0.3 - 0.1 - 0.1 - 0.1` |`-2.78e-17` ❌ |`0` ✅ |
+|Integer > MAX_SAFE_INTEGER |`9007199254740993` |`9007199254740992` ❌ |`9007199254740993` ✅ |
+
+!!! Precision modes
+
+|!`calcPrec` |!Engine |!Significant digits |!Typical cost vs float |
+| `float` (default) |IEEE 754 float64 |~16 |1× baseline |
+| `64` |BigNumber |64 |~3–4× slower |
+| `128` |BigNumber |128 |~5–6× slower |
+| `256` |BigNumber |256 |~8–10× slower |
+
+!!! Display vs internal precision
+
+`calcPrec` controls internal accuracy. `precision` controls visible digits. Raising `calcPrec` does ''not'' add visible digits — it only reduces rounding errors in intermediate calculations.
+
+Note on BigNumber digit counts: `calcPrec="64"` means 64 ''decimal'' significant digits (~213 bits), not 64 bits. Do not confuse with IEEE 754 bit widths (`calcPrec="128"` is ~425 bits).
+
+!!! Performance thresholds
+
+|!`calcPrec` |!µs/eval (arithmetic) |!µs/eval (`sin`/`cos`) |!Widgets before 16 ms jank |
+| `float` |~13 µs |~14 µs |>1 000 ✅ |
+| `64` |~66 µs |~925 µs |~240 arith. / ~17 trig |
+| `128` |~169 µs |~1 957 µs |~94 arith. / ~8 trig |
+| `256` |~89 µs |~5 346 µs |~180 arith. / ~3 trig |
+
+The LRU cache (500 entries) means each unique expression is evaluated only once per tiddler change.
+
+!!! Hard limit: trig functions at high precision
+
+`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh` throw `[DecimalError] Precision limit exceeded` at precision ≥ 510. The widget caps BigNumber options at `256`, safely within this limit.
 
 ---
 
-!! 📜 License
+!! Limitations
 
-* MIT License  
-* Includes Math.js (Apache 2.0)
+* Not a spreadsheet — no dependency graph between tiddlers
+* No reactive variable propagation across widgets
+* Sandbox is heuristic, not a secure VM
+* KaTeX output covers common cases; advanced LaTeX (`\color`, `\align`, `\underbrace`) requires raw LaTeX via `<$katex />`
+
+---
+
+!! Version history
+
+;v0.2.0 — 2026-06-12
+:Simplified API: `show` and `mode` replace `render`; input is now EN-only; all output passes through KaTeX (with plain-text fallback). New `show="full"` mode renders formula and result together. `notation` replaces `scientific`. `scope` replaces `data`. `calcPrec` replaces `precision` for calculation precision; `precision` is now the display digit count. Added `notation="bin"`, `"oct"`, `"hex"` for integer-base output.
+
+;v0.1.0 — 2026-06-06
+:Initial public release. Establishes the plugin structure and evaluation pipeline.
+
+---
+
+!! Credits
+
+Inspired by [[tiddly-mathjs|https://github.com/mklauber/tiddly-mathjs]] by mklauber.
+
+Mathematical evaluation by [[Math.js|https://github.com/josdejong/mathjs]], created by Jos de Jong.
+
+Icon from [[SVG Repo|https://www.svgrepo.com/svg/228720/calculating-maths]] — see SVG Repo terms of use.
+
+Developed with assistance from OpenAI ChatGPT and Anthropic Claude.
+
+---
+
+!! License
+
+MIT — see `LICENSE`. Includes Math.js (Apache 2.0).

@@ -1,0 +1,84 @@
+name: Android Kotlin Local AI
+version: 1.0.0
+schema: v1
+models:
+  - name: Agent Qwen3-coder
+    provider: ollama
+    model: qwen3-coder:30b
+    capabilities:
+      - tool_use
+    roles:
+      - chat
+      - edit
+      - apply
+    defaultCompletionOptions:
+      contextLength: 16384
+      maxTokens: 2048
+      temperature: 0.2
+  - name: Autocomplete Qwen3-coder
+    provider: ollama
+    model: qwen3-coder:30b
+    roles:
+      - autocomplete
+    defaultCompletionOptions:
+      contextLength: 2048
+      maxTokens: 96
+      temperature: 0.0
+rules:
+  - |
+    rules:
+  - |
+    ## Project Context
+
+    This project is a TiddlyWiki plugin.
+
+    Ignore the very long last line in `math.js`; it is only the minified distribution of the Math.js library and should not be analyzed, modified, reformatted, or used as a source of project logic.
+
+    ## Coding Standards
+
+    - Use modern, canonical JavaScript (ES2020+) for all new code.
+    - Follow the standard TiddlyWiki plugin structure and conventions.
+    - Respect existing project architecture, file organization, and naming conventions.
+    - Prefer readability and maintainability over clever or compact code.
+    - Keep compatibility with the current TiddlyWiki version used by the project.
+    - Avoid introducing unnecessary dependencies.
+    - Document non-obvious implementation choices with concise comments.
+
+    ## TiddlyWiki Specific Guidelines
+
+    - Use canonical TiddlyWiki widget, macro, filter, module, and plugin patterns.
+    - Follow existing conventions used by the TiddlyWiki core whenever applicable.
+    - When creating JavaScript modules, use the appropriate TiddlyWiki module type.
+    - Preserve backward compatibility unless explicitly instructed otherwise.
+
+    ## Testing
+
+    - Write tests for all new features.
+    - Update existing tests when modifying behavior.
+    - Consider edge cases and invalid inputs.
+
+    ## Documentation Resources
+
+    For TiddlyWiki-specific questions, use these references:
+
+    - https://tiddlywiki.com/
+    - https://tiddlywiki.com/dev/
+
+    When explaining TiddlyWiki concepts, APIs, widgets, filters, macros, or plugin architecture, cite the relevant documentation whenever possible.
+
+    ## Development Workflow
+
+    - Before modifying code, inspect the surrounding files to understand existing patterns.
+    - Reuse existing utilities and helper functions whenever possible.
+    - Do not rewrite large sections of code unless necessary.
+    - Prefer minimal, targeted changes.
+    - Preserve existing formatting style.
+
+context:
+  - provider: code
+  - provider: docs
+  - provider: diff
+  - provider: terminal
+  - provider: problems
+  - provider: folder
+  - provider: codebase

@@ -25,15 +25,18 @@ module-type: library
  * so 500 is a safe ceiling without meaningful memory cost. 🧠
  *
  * Cache key format:
- *   "<tiddler-title>::<scientific-mode>::<normalised-expression>"
+ *   JSON array: ["<tiddler-title>", "<calcPrec>", "<scope-attr>", "<expr>"]
+ *   JSON encoding avoids separator collisions with titles containing "::".
  *   The tiddler title enables targeted invalidation when a tiddler changes.
- *   The scientific mode is included because "auto" vs "never" can produce
- *   different formatted output from the same raw result.
+ *   calcPrec and the scope attribute are part of the key because they change
+ *   the RAW result.  notation/precision are deliberately NOT included: the
+ *   cached value is the raw (unformatted) result — formatting happens after
+ *   retrieval, so two widgets differing only in display options share entries.
  *
  * Exported:
- *   get(key)               → result | null
+ *   get(key)                          → result | null
  *   set(key, value)
- *   key(tid, expr, mode)   → string
+ *   key(tid, expr, calcPrec, scope)   → string
  *   clear(tid)
  */
 
@@ -59,13 +62,15 @@ module-type: library
   };
 
   /** Build a cache key from evaluation context. 🔑 */
-  exports.key = function key(tid, expr, mode) {
-    return `${tid}::${mode}::${expr}`;
+  exports.key = function key(tid, expr, calcPrec, scopeAttr) {
+    return JSON.stringify([tid, calcPrec, scopeAttr, expr]);
   };
 
   /** Remove all entries belonging to a given tiddler. 🧹 */
   exports.clear = function clear(tid) {
-    const prefix = tid + "::";
+    // '["<tid>",' — same JSON escaping as key(), so titles containing
+    // quotes or "::" cannot collide with another tiddler's prefix.
+    const prefix = JSON.stringify([tid]).slice(0, -1) + ",";
     for (const k of _cache.keys()) {
       if (k.startsWith(prefix)) _cache.delete(k);
     }

@@ -1,0 +1,86 @@
+title: $:/plugins/nikorion/math/test
+type: text/vnd.tiddlywiki
+
+\define stateTidd() $:/state/plugins/nikorion/math/test
+
+\function locale()   [<stateTidd>get[locale]else[en-US]]
+\function notation() [<stateTidd>get[notation]else[auto]]
+\function show()     [<stateTidd>get[show]else[result]]
+\function mode()     [<stateTidd>get[mode]else[inline]]
+\function silence()  [<stateTidd>get[silence]else[no]]
+\function calcPrec() [<stateTidd>get[calcPrec]else[float]]
+
+\procedure cleanValues()
+<$action-setfield $tiddler=<<stateTidd>> $field="expression" $value="" />
+<$action-setfield $tiddler=<<stateTidd>> $field="locale"     $value="en-US" />
+<$action-setfield $tiddler=<<stateTidd>> $field="notation"   $value="auto" />
+<$action-setfield $tiddler=<<stateTidd>> $field="show"       $value="result" />
+<$action-setfield $tiddler=<<stateTidd>> $field="mode"       $value="inline" />
+<$action-setfield $tiddler=<<stateTidd>> $field="silence"    $value="no" />
+<$action-setfield $tiddler=<<stateTidd>> $field="calcPrec"   $value="float" />
+\end cleanValues
+
+<style>
+.locale-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.locale-row .tc-radio {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+</style>
+
+<table>
+<tr>
+<th>Attributes</th>
+</tr>
+<tr>
+<td class="locale-row">
+`locale`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="locale" value="en-US" default="en-US">&nbsp;en-US&nbsp;(default)</$radio>
+<$radio field="locale" value="fr-FR">&nbsp;fr-FR</$radio>
+</$tiddler>
+`show`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="show" value="result" default="result">&nbsp;result&nbsp;(default)</$radio>
+<$radio field="show" value="formula">&nbsp;formula</$radio>
+<$radio field="show" value="full">&nbsp;full</$radio>
+</$tiddler></td>
+</tr>
+<tr>
+<td class="locale-row">
+`notation`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="notation" value="auto" default="auto">&nbsp;auto&nbsp;(default)</$radio>
+<$radio field="notation" value="fixed">&nbsp;fixed</$radio>
+<$radio field="notation" value="scientific">&nbsp;scientific</$radio>
+<$radio field="notation" value="engineering">&nbsp;engineering</$radio>
+</$tiddler>
+`mode`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="mode" value="inline" default="inline">&nbsp;inline&nbsp;(default)</$radio>
+<$radio field="mode" value="block">&nbsp;block</$radio>
+</$tiddler></td>
+</tr>
+<tr>
+<td class="locale-row">
+`calcPrec`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="calcPrec" value="float" default="float">&nbsp;float&nbsp;(default)</$radio>
+<$radio field="calcPrec" value="64">&nbsp;64</$radio>
+<$radio field="calcPrec" value="128">&nbsp;128</$radio>
+<$radio field="calcPrec" value="256">&nbsp;256</$radio>
+</$tiddler>
+`silence`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="silence" value="no" default="no">&nbsp;no&nbsp;(default)</$radio>
+<$radio field="silence" value="yes">&nbsp;yes</$radio>
+</$tiddler></td>
+</tr>
+</table>
+
+<$edit-text tiddler=<<stateTidd>> field="expression" placeholder="Expression" size=36/>
+<$button class="tc-btn-invisible" actions=<<cleanValues>>>🔄</$button>
+<$list filter="[<stateTidd>has[expression]]">
+<$calc locale=<<locale>> notation=<<notation>> show=<<show>> mode=<<mode>> calcPrec=<<calcPrec>> silence=<<silence>>>
+<$view tiddler=<<stateTidd>> field="expression"/>
+</$calc>
+</$list>

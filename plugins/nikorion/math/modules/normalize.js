@@ -7,64 +7,33 @@ module-type: library
 /*
  * normalize.js — expression normalisation 🔄
  *
- * Converts a raw user expression into a form that mathjs can parse,
- * regardless of the typographic or locale conventions used.
+ * Converts a raw user expression into a form that mathjs can parse.
+ *
+ * Input must use EN/international notation:
+ *   • Decimal separator  : point       3.14
+ *   • Thousands separator: space or none   1 000 000
+ *   • Operators          : standard ASCII or the Unicode aliases below
  *
  * After this pass, the expression contains only ASCII math operators,
  * mathjs-recognised function names and identifiers, and standard decimal
  * points — the evaluator never sees locale-specific characters.
  *
- * ─────────────────────────────────────────────────────────────────────
- * 📐 A NOTE ON MATHEMATICAL NOTATION ACROSS COUNTRIES
- * ─────────────────────────────────────────────────────────────────────
- *
- * What is considered "international" notation (ISO 80000, used in most
- * English-language scientific literature and by mathjs) vs. what differs
- * notably by country — especially France:
- *
- * DECIMAL SEPARATOR
- *   International / EN : point        3.14
- *   France (everyday)  : comma        3,14
- *   France (academic)  : comma        3,14  (ISO 80000-1 allows both but
- *                                            France officially uses comma)
- *   Germany, Italy…    : comma        3,14
- *
- * THOUSANDS SEPARATOR
- *   International / EN : comma        1,000,000   (but also: none or space)
- *   France (everyday)  : space        1 000 000   (narrow no-break U+202F
- *                                                  or regular space)
- *   France (academic)  : thin space   1 000 000   (ISO 80000 recommends space)
- *   Germany            : period       1.000.000
- *
- * MULTIPLICATION SIGN
- *   International / EN : × (U+00D7) or · (U+00B7) or just juxtaposition
- *   France (everyday)  : × is common; the middle dot · is used for scalar
- *                        products and in compound units (m·s⁻¹)
- *   Academic           : · preferred to distinguish from variable x
- *
- * NOTE ON "x" AS MULTIPLICATION
- *   In informal/handwritten math (especially for younger students in FR),
- *   "x" is sometimes used as a multiplication sign (e.g. "3 x 4").
- *   This plugin does NOT perform that substitution — "x" is treated as
- *   a user variable, which is the standard mathjs behaviour and allows
- *   proper algebraic expressions like "f(x) = x^2".
- *
- * INTERVALS (France)
- *   France uses      [a ; b]  with a semicolon to avoid confusion with
- *   the decimal comma.  International notation uses [a, b] with a comma.
- *   mathjs does not natively support interval notation, so this is out
- *   of scope here, but worth knowing if you extend the plugin.
- *
- * AMBIGUOUS CASES handled by convention
- *   "1,234"  — could be 1.234 (FR decimal) or 1234 (EN thousands).
- *              → We treat a lone comma between digits as a decimal separator
- *                (FR convention) since EN thousands-comma is always paired
- *                with a decimal point in practice.
- *   "1.234"  — could be 1234 (DE/IT thousands) or 1.234 (EN decimal).
- *              → We treat a lone period as decimal (EN/international),
- *                which is the mathjs default and the safer assumption.
+ * Locale-aware formatting on OUTPUT (FR comma, space grouping…) is handled
+ * separately by format.js and is independent of this input normalisation.
  *
  * ─────────────────────────────────────────────────────────────────────
+ * Transformations applied
+ * ─────────────────────────────────────────────────────────────────────
+ *
+ *  1. Vulgar fractions    ½ → (1/2),  ¾ → (3/4), …
+ *  2. Radical symbols     √x → sqrt(x),  ∛x → cbrt(x)
+ *  3. Unicode constants   π → pi,  τ → (2*pi),  ∞ → Infinity,  ℯ → e
+ *  4. Superscript digits  x² → x^2,  a³ → a^3
+ *  5. Unicode operators   × → *,  · → *,  ÷ → /,  − → -,  – → -
+ *  6. Degree symbol       90° → 90 deg
+ *  7. Scientific spacing  5 e9 → 5e9
+ *  8. Thousands spaces    1 000 000 → 1000000
+ *     (U+0020, U+00A0, U+2009, U+202F between digits only)
  *
  * Exported:
  *   normalize(expr) → string
@@ -108,54 +77,17 @@ module-type: library
     return s;
   }
 
-  // ── Number-format normalisation ───────────────────────────────────────
-  // Handles the locale-specific ways numbers are written so the result is
-  // always a plain decimal that mathjs accepts.
-  //
-  // Step 1 — thousands separators (all whitespace variants between digits)
-  //   Spaces used as thousands separators are unambiguously not decimal
-  //   separators.  We collapse them regardless of locale. 🗜️
-  //   Affected: U+0020 (space), U+00A0 (NBSP), U+2009 (thin space),
-  //             U+202F (narrow NBSP — the ISO-recommended thousands sep).
-  //
-  // Step 2 — decimal / thousands comma+period pairs (deterministic)
-  //   "1.234,56" → 1234.56  (period = thousands, comma = decimal — DE/IT)
-  //   "1,234.56" → 1234.56  (comma = thousands, point = decimal — EN)
-  //   Both patterns are unambiguous because two different separators appear.
-  //
-  // Step 3 — lone comma between digits (ambiguous, FR convention applied)
-  //   "3,14"  → 3.14   treated as FR decimal comma.
-  //   There is no fully deterministic solution when only one separator type
-  //   is used.  The FR-decimal interpretation is chosen because:
-  //     • In a math expression context, a lone comma rarely means thousands.
-  //     • EN thousands-comma is almost always accompanied by a decimal point.
-  //
-  // Step 4 — lone period is left untouched (already mathjs-compatible). ✅
-  function normalizeNumbers(s) {
-    // Step 1: thousands spaces → remove (only between digit and digit)
-    // Iterating handles "1 234 567" in multiple passes.
+  // ── Thousands-space removal ───────────────────────────────────────────
+  // Strips spaces used as thousands separators (U+0020, U+00A0, U+2009,
+  // U+202F) when they appear between two digit characters.
+  // Iterates until stable to handle "1 234 567" in multiple passes. 🗜️
+  function removeThousandsSpaces(s) {
     let prev;
     do {
       prev = s;
       s = s.replace(/(\d)[\u0020\u00A0\u2009\u202F](\d)/g, "$1$2");
     } while (s !== prev);
-
-    // Step 2a: period-thousands + comma-decimal  "1.234,56" → "1234.56"
-    if (/\d\.\d{3},\d/.test(s)) {
-      s = s.replace(/(\d)\.(\d{3}(?=[,\d]))/g, "$1$2");
-      s = s.replace(/(\d),(\d)/g, "$1.$2");
-      return s;
-    }
-    // Step 2b: comma-thousands + period-decimal  "1,234.56" → "1234.56"
-    if (/\d,\d{3}\.\d/.test(s)) {
-      s = s.replace(/(\d),(\d{3}(?=[.\d]))/g, "$1$2");
-      return s;
-    }
-
-    // Step 3: lone comma between digits → FR decimal → period
-    s = s.replace(/(\d),(\d)/g, "$1.$2");
-
-    return s; // Step 4: lone period already correct
+    return s;
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -174,10 +106,10 @@ module-type: library
     s = wrapRadical(s, "\u221B", "cbrt"); // ∛
 
     // ── 3. Unicode constants → mathjs names ────────────────────────────
-    s = s.replaceAll("\u03C0", "pi");            // π
-    s = s.replaceAll("\u03C4", "(2*pi)");        // τ  (tau = 2π)
-    s = s.replaceAll("\u221E", "Infinity");       // ∞
-    s = s.replaceAll("\u212F", "e");             // ℯ (Euler e, U+212F)
+    s = s.replaceAll("\u03C0", "pi");      // π
+    s = s.replaceAll("\u03C4", "(2*pi)"); // τ  (tau = 2π)
+    s = s.replaceAll("\u221E", "Infinity"); // ∞
+    s = s.replaceAll("\u212F", "e");       // ℯ (Euler e, U+212F)
 
     // ── 4. Superscript digits → ^ exponent ─────────────────────────────
     s = s.replace(SUPERSCRIPT_RE, (match) => {
@@ -187,21 +119,23 @@ module-type: library
 
     // ── 5. Unicode operators → ASCII ───────────────────────────────────
     s = s
-      .replaceAll("\u00D7", "*")   // ×  multiplication sign
-      .replaceAll("\u00B7", "*")   // ·  middle dot (FR scalar product / unit separator)
-      .replaceAll("\u00F7", "/")   // ÷  division sign
-      .replaceAll("\u2212", "-")   // −  minus sign (U+2212, ≠ ASCII hyphen U+002D)
-      .replaceAll("\u2013", "-")   // –  en dash (sometimes used as minus)
-      .replaceAll("\u2010", "-");  // ‐  hyphen (U+2010)
+      .replaceAll("\u00D7", "*")  // ×  multiplication sign
+      .replaceAll("\u00B7", "*")  // ·  middle dot
+      .replaceAll("\u00F7", "/")  // ÷  division sign
+      .replaceAll("\u2212", "-")  // −  minus sign (U+2212, ≠ ASCII hyphen)
+      .replaceAll("\u2013", "-")  // –  en dash
+      .replaceAll("\u2010", "-"); // ‐  hyphen (U+2010)
 
     // ── 6. Degree symbol → mathjs 'deg' unit ───────────────────────────
-    // mathjs understands 'deg' as an angular unit: 90 deg, sin(45 deg).
-    // We insert a space before 'deg' to avoid "90deg" becoming "90deg"
-    // (which also works in mathjs, but the space form is cleaner). 📐
     s = s.replace(/(\d)\u00B0/g, "$1 deg"); // °
 
-    // ── 7. Number-format normalisation (locale-aware) ───────────────────
-    s = normalizeNumbers(s);
+    // ── 7. Scientific notation with stray space ────────────────────────
+    // "5 e9" or "5 e-3" → "5e9" / "5e-3"
+    // Never touches standalone 'e' (Euler constant) like "e + 9". 🔬
+    s = s.replace(/(\d)\s+[eE]([+\-]?\d)/g, "$1e$2");
+
+    // ── 8. Thousands spaces → remove ───────────────────────────────────
+    s = removeThousandsSpaces(s);
 
     return s;
   };
