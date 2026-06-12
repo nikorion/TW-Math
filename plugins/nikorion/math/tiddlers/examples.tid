@@ -4,24 +4,33 @@ type: text/vnd.tiddlywiki
 
 ! `<$calc>` widget — examples
 
-!! Basic arithmetic & number formatting
+!! Arithmetic & functions
+
+| Expression | Result |h
+| `<$calc>1 + 2 * 3</$calc>` | <$calc>1 + 2 * 3</$calc> |
+| `<$calc>1 000 000 / 3</$calc>` (thousands space) | <$calc>1 000 000 / 3</$calc> |
+| `<$calc>1,000,000 / 3</$calc>` (thousands comma) | <$calc>1,000,000 / 3</$calc> |
+| `<$calc>√144</$calc>` (√ unicode) | <$calc>√144</$calc> |
+| `<$calc>∛27</$calc>` (∛ unicode) | <$calc>∛27</$calc> |
+| `<$calc>2² + 3²</$calc>` (superscripts) | <$calc>2² + 3²</$calc> |
+| `<$calc>½ + ¼</$calc>` (vulgar fractions) | <$calc>½ + ¼</$calc> |
+| `<$calc>π * 2</$calc>` (π unicode) | <$calc>π * 2</$calc> |
+| `<$calc>τ / 2</$calc>` (τ = 2π) | <$calc>τ / 2</$calc> |
+
+!! Locale output (EN vs FR)
+
+Locale affects decimal separator, thousands separator, and scientific notation style.
 
 | Expression | `locale="en"` (default) | `locale="fr"` |h
-| `<$calc>1 + 2 * 3</$calc>` | <$calc>1 + 2 * 3</$calc> | <$calc locale="fr">1 + 2 * 3</$calc> |
-| `<$calc>1 000 000 / 3</$calc>` (thousands space) | <$calc>1 000 000 / 3</$calc> | <$calc locale="fr">1 000 000 / 3</$calc> |
-| `<$calc>2^10</$calc>` | <$calc>2^10</$calc> | <$calc locale="fr">2^10</$calc> |
-| `<$calc>√144</$calc>` (√ unicode) | <$calc>√144</$calc> | |
-| `<$calc>∛27</$calc>` (∛ unicode) | <$calc>∛27</$calc> | |
-| `<$calc>2² + 3²</$calc>` (superscripts) | <$calc>2² + 3²</$calc> | |
-| `<$calc>½ + ¼</$calc>` (vulgar fractions) | <$calc>½ + ¼</$calc> | |
-| `<$calc>π * 2</$calc>` (π unicode) | <$calc>π * 2</$calc> | <$calc locale="fr">π * 2</$calc> |
-| `<$calc>τ / 2</$calc>` (τ = 2π) | <$calc>τ / 2</$calc> | |
+| `<$calc>1234567.89</$calc>` | <$calc>1234567.89</$calc> | <$calc locale="fr">1234567.89</$calc> |
+| `<$calc>π * 2</$calc>` | <$calc>π * 2</$calc> | <$calc locale="fr">π * 2</$calc> |
+| `<$calc notation="scientific">1234</$calc>` | <$calc notation="scientific">1234</$calc> | <$calc notation="scientific" locale="fr">1234</$calc> |
+| `<$calc notation="fixed" precision="2">1000000 / 3</$calc>` | <$calc notation="fixed" precision="2">1000000 / 3</$calc> | <$calc notation="fixed" precision="2" locale="fr">1000000 / 3</$calc> |
 
 !! Notation modes
 
 | Expression | Result |h
 | `<$calc notation="scientific">1234</$calc>` | <$calc notation="scientific">1234</$calc> |
-| `<$calc notation="scientific" locale="fr">1234</$calc>` | <$calc notation="scientific" locale="fr">1234</$calc> |
 | `<$calc notation="engineering">1234567</$calc>` | <$calc notation="engineering">1234567</$calc> |
 | `<$calc notation="fixed" precision="2">3.14159</$calc>` | <$calc notation="fixed" precision="2">3.14159</$calc> |
 | `<$calc notation="auto">0.000001 / 10</$calc>` (auto triggers below 1e-6) | <$calc notation="auto">0.000001 / 10</$calc> |
@@ -29,17 +38,21 @@ type: text/vnd.tiddlywiki
 | `<$calc notation="bin">42</$calc>` | <$calc notation="bin">42</$calc> |
 | `<$calc notation="oct">42</$calc>` | <$calc notation="oct">42</$calc> |
 | `<$calc notation="hex">255</$calc>` | <$calc notation="hex">255</$calc> |
-| `<$calc notation="hex">-255</$calc>` (negative accepted) | <$calc notation="hex">-255</$calc> |
-| `<$calc notation="bin">3.7</$calc>` (non-integer truncated silently) | <$calc notation="bin">3.7</$calc> |
+| `<$calc notation="hex">-255</$calc>` (negative) | <$calc notation="hex">-255</$calc> |
+| `<$calc notation="bin">3.7</$calc>` (non-integer truncated) | <$calc notation="bin">3.7</$calc> |
 
-⚠️ bin/oct/hex: `locale` and `precision` are ignored. Non-integer values are truncated silently by math.js (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
+⚠️ bin/oct/hex: `locale` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
 
-!! KaTeX rendering
+!! Formula rendering
+
+`show="formula"` and `show="full"` render the expression typeset — via KaTeX by default, as pretty-printed plain text with `output="text"`.
 
 | Expression | `show="result"` | `show="formula"` | `show="full"` |h
 | `sqrt(x^2 + 1)` | <$calc>sqrt(x^2 + 1)</$calc> | <$calc show="formula">sqrt(x^2 + 1)</$calc> | <$calc show="full">sqrt(4)</$calc> |
 | `(a+b)/c` | | <$calc show="formula">(a+b)/c</$calc> | |
 | `pi * r^2` | | <$calc show="formula">pi * r^2</$calc> | <$calc show="full">pi * 5^2</$calc> |
+| `factorial(5)` | <$calc>factorial(5)</$calc> | <$calc show="formula">factorial(5)</$calc> | <$calc show="full">factorial(5)</$calc> |
+| `log10(1000)` | <$calc>log10(1000)</$calc> | <$calc show="formula">log10(1000)</$calc> | |
 
 Block display (`mode="block"`):
 
@@ -80,12 +93,13 @@ Block display (`mode="block"`):
 | `<$calc>100 km/h to m/s</$calc>` | <$calc>100 km/h to m/s</$calc> |
 | `<$calc>3 kg + 1500 g</$calc>` (mixed units) | <$calc>3 kg + 1500 g</$calc> |
 
-!! Complex numbers & special values
+!! Complex numbers
 
 | Expression | Result |h
 | `<$calc>2 + 3i</$calc>` | <$calc>2 + 3i</$calc> |
 | `<$calc>(2 + 3i) * (1 - i)</$calc>` | <$calc>(2 + 3i) * (1 - i)</$calc> |
 | `<$calc>abs(3 + 4i)</$calc>` (modulus) | <$calc>abs(3 + 4i)</$calc> |
+| `<$calc>sqrt(-1)</$calc>` | <$calc>sqrt(-1)</$calc> |
 
 !! Variables via scope tiddler
 

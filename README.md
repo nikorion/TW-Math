@@ -13,12 +13,12 @@ A lightweight TiddlyWiki widget integrating Math.js for inline expression
 evaluation with:
 
 - locale-aware output formatting (EN/FR/any BCP-47)
+- input in EN notation: decimal point, thousands separators (space or EN comma), scientific notation
 - configurable numeric precision (float or BigNumber)
 - unit-aware output with automatic simplification
 - LRU cache for performance
 - static expression validation with friendly error messages
-- scientific notation control
-- KaTeX symbolic rendering (optional — requires KaTeX plugin)
+- KaTeX rendering by default when plugin is installed; graceful plain-text fallback
 
 ---
 
@@ -26,12 +26,13 @@ evaluation with:
 
 ### EN/international input
 
-Accepts EN notation out of the box — decimal point, thousands space, scientific:
+Accepts EN notation — decimal point, thousands separator (space or comma), scientific:
 
 | Input | Interpretation |
 |---|---|
 | `1.2 + 3.4` | decimal point |
 | `1 000 000 / 3` | thousands space |
+| `1,000,000 / 3` | thousands comma (EN style) |
 | `5e9` · `1.5e-3` | scientific notation |
 
 ### Math.js engine
@@ -39,7 +40,7 @@ Accepts EN notation out of the box — decimal point, thousands space, scientifi
 - arithmetic and algebra
 - functions: `sin`, `cos`, `sqrt`, `log`, `factorial`, `gcd`, and [all others](https://mathjs.org/docs/reference/functions.html)
 - units with auto-simplification and explicit `to` conversion
-- complex numbers (`sqrt(-1)` → error with value, not a crash)
+- complex numbers (`2 + 3i`, `sqrt(-1)` → displayed normally)
 
 ### Notation modes
 
@@ -68,23 +69,24 @@ When `locale="fr-FR"`:
 - thin non-breaking space as thousands separator: `1 234 567`
 - scientific style: `1,234 × 10^7`
 
-### KaTeX symbolic rendering
+### Formula rendering
 
-Renders the expression as a typeset formula without evaluating it.
-Requires the KaTeX plugin.
+`show="formula"` and `show="full"` typeset the expression. With `output="katex"` (default),
+KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable plain text:
+
+| Input | KaTeX | Plain text |
+|---|---|---|
+| `sqrt(x^2+1)` | `\sqrt{x^{2}+1}` | `√(x²+1)` |
+| `(a+b)/c` | `\frac{a+b}{c}` | `(a+b)/c` |
+| `pi * r^2` | `\pi\cdot r^{2}` | `π·r²` |
+| `factorial(n)` | `n!` | `n!` |
+| `log10(x)` | `\log_{10}\left(x\right)` | `log₁₀(x)` |
 
 ```
 <$calc show="formula">(a+b)/c</$calc>
 <$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>
+<$calc output="text" show="formula">pi * r^2</$calc>
 ```
-
-Automatic mathjs-to-LaTeX conversions:
-
-| Input | LaTeX |
-|---|---|
-| `sqrt(x^2+1)` | `\sqrt{x^{2}+1}` |
-| `(a+b)/c` | `\frac{a+b}{c}` |
-| `pi` | `\pi` |
 
 > When `show="formula"`, the expression is not evaluated — `notation`,
 > `precision`, `calcPrec`, and `scope` are ignored.
@@ -109,8 +111,9 @@ Before any evaluation:
 
 | Attribute | Values | Default | Description |
 |---|---|---|---|
-| `show` | `result` · `formula` · `full` | `result` | What to display — result only, formula only, or both |
-| `mode` | `inline` · `block` | `inline` | KaTeX display mode — inline or centred block |
+| `output` | `katex` · `text` | `katex` | Rendering backend — KaTeX or plain text |
+| `show` | `result` · `formula` · `full` | `result` | What to display |
+| `mode` | `inline` · `block` | `inline` | KaTeX display mode |
 | `locale` | `en` · `en-US` · `fr` · `fr-FR` · BCP-47 | `en` | Output number format (separators, decimal symbol) |
 | `notation` | `auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` | `auto` | Numeric output notation |
 | `precision` | positive integer | 6 | Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
@@ -134,10 +137,6 @@ The 200 ms debounce already covers momentary invalidity while typing.
 `silence` covers cases where the expression remains invalid even after
 stabilizing — and showing nothing is a better experience than a permanent
 error message.
-
-`silence` does **not** cover attribute errors (`notation="xyz"`, `calcPrec="512"`).  Those are static mistakes in the tiddler
-source — they will never self-correct, so hiding them would only make them
-harder to diagnose.
 
 ---
 
@@ -164,6 +163,12 @@ Any valid BCP-47 tag is accepted: `de-DE`, `ja-JP`, etc.
 <$calc show="result">sqrt(2)</$calc>
 <$calc show="formula">sqrt(2)</$calc>
 <$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>
+```
+
+### Force plain text output
+
+```
+<$calc output="text" show="formula">pi * r^2</$calc>
 ```
 
 ### Notation
@@ -304,10 +309,6 @@ reduces rounding errors in intermediate steps.
 
 ### Display precision defaults
 
-Math.js generic defaults cap output at 14 significant digits, with `auto`
-switching to scientific notation below `1e-3` or above `1e5`.  The plugin uses
-tighter, more readable defaults:
-
 | Notation | Plugin default | Typical range in practice |
 |---|---|---|
 | `auto` | 6 sig. digits | — |
@@ -316,16 +317,7 @@ tighter, more readable defaults:
 | `engineering` | 6 sig. digits | 3–4 (physical components rarely need more) |
 | `bin` · `oct` · `hex` | — | `precision` ignored — math.js emits the exact digit count |
 
-These defaults match common scientific/technical software conventions (e.g.
-MATLAB, Wolfram Alpha display defaults) and are readable without being lossy
-for the majority of use cases.  The `precision` attribute lets users override
-them per widget.
-
 ### Performance thresholds (benchmarked on V8/Node.js)
-
-A full page refresh evaluates all non-cached widgets sequentially on the main
-thread.  The browser renders at 60 fps — each frame has 16 ms.  Anything beyond
-that causes a visible stutter.
 
 | `precision` | µs/eval (arithmetic) | µs/eval (`sin`/`cos`) | Widgets before jank |
 |---|---|---|---|
@@ -392,6 +384,17 @@ Or drag-and-drop the packed plugin tiddler into any open wiki.
 ---
 
 ## Version history
+
+### v0.3.0 — 2026-06-13
+
+New `output` attribute (`katex` default / `text`). KaTeX is now opt-out rather
+than opt-in: active by default when the plugin is installed, graceful
+pretty-printed plain-text fallback otherwise. Plain text mode uses a new
+pretty-printer (`prettyprint.js`) for formula rendering (π, ·, superscripts,
+√, ∛, !, log₂…). Complex numbers are now displayed normally instead of
+producing an error. Temperatures render with `°C` / `°F` symbols.
+Integer-base notation (`bin`/`oct`/`hex`) now truncates non-integer values
+correctly. EN-style comma accepted as thousands separator on input (`1,000,000`).
 
 ### v0.2.0 — 2026-06-12
 

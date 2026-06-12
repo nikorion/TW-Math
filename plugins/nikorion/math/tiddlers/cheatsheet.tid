@@ -6,6 +6,7 @@ type: text/vnd.tiddlywiki
 !! Attributes
 
 |!Attribute |!Values |!Default |!Description |
+| `output` |`katex` · `text` |`katex` |Rendering backend |
 | `show` |`result` · `formula` · `full` |`result` |What to display |
 | `mode` |`inline` · `block` |`inline` |KaTeX display mode |
 | `locale` |`en` · `en-US` · `fr` · `fr-FR` · BCP-47 |`en` |Output number format |
@@ -15,28 +16,31 @@ type: text/vnd.tiddlywiki
 | `scope` |tiddler title or `{a:1, b:2}` |— |Variable scope |
 | `silence` |`yes` · `no` |`no` |Suppress expression errors |
 
+;`output` values:
+* `katex` (default) — KaTeX when plugin installed, pretty-printed plain text fallback
+* `text` — always pretty-printed plain text (π, ·, superscripts, √, ∛, !, log₂…)
+
 ;`show` values:
 * `result` — evaluate and render the numeric result
-* `formula` — render the formula via `toTex()` without evaluating
-* `full` — render `formula = result` in one KaTeX block
+* `formula` — typeset the expression without evaluating; `notation`, `precision`, `calcPrec`, `scope` are ignored
+* `full` — `formula = result`
 
 ;`notation` values:
-* `auto` / `fixed` / `scientific` / `engineering` — locale-aware decimal output; `precision` controls digits shown
+* `auto` / `fixed` / `scientific` / `engineering` — locale-aware decimal output; `precision` controls digits
 * `bin` · `oct` · `hex` — integer-base output; locale and precision are ignored
 
 ;`notation` defaults for decimal/scientific modes:
 * `auto` / `fixed` → `precision` = max decimal places (default 6)
-* `scientific` / `engineering` → `precision` = significant digits (default 5)
+* `scientific` / `engineering` → `precision` = significant digits (default 6)
 
 ---
 
 !! Numeric input — accepted formats
 
-Input must use EN/international notation:
-
 |!Format |!Example |
 |Decimal point |`3.14` |
 |Thousands space |`1 000 000` |
+|Thousands comma (EN style) |`1,000,000` |
 |Scientific notation |`5e9` · `1.5e-3` · `2.5e+6` |
 
 ⚠️ Do ''not'' write `5 * e9` — that means 5 times the undefined symbol `e9`.
@@ -102,9 +106,10 @@ Use `euler`, `base`, `idx`, `imag`, or any other name instead.
 
 !! Complex numbers
 
-* `2 + 3i` → complex result (widget shows a warning with the value)
+* `2 + 3i` → `2 + 3i` (displayed normally)
+* `(2 + 3i) * (1 - i)` → `5 + i`
 * `abs(3 + 4i)` → `5` (modulus)
-* `sqrt(-1)` → error with value `0 + 1i`
+* `sqrt(-1)` → `i`
 
 ---
 
@@ -124,6 +129,30 @@ Use `euler`, `base`, `idx`, `imag`, or any other name instead.
 
 ;Extract numeric value in target unit
 * `number(5cm, mm)` → `50`
+
+---
+
+!! Formula rendering — `show="formula"` / `show="full"`
+
+KaTeX by default when the plugin is installed; pretty-printed plain text otherwise or when `output="text"`.
+
+<$codeblock code="""<$calc show="formula">(a+b)/c</$calc>
+<$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>"""/>
+
+;KaTeX automatic conversions:
+* `sqrt(x^2+1)` → `\sqrt{x^{2}+1}`
+* `(a+b)/c` → `\frac{a+b}{c}`
+* `pi` → `\pi`
+
+;Plain text pretty-print conversions (`output="text"`):
+* `pi` → `π`   `e` → `ℯ`   `Infinity` → `∞`
+* `*` → `·`
+* `x^2` → `x²`   `x^23` → `x²³`
+* `sqrt(…)` → `√(…)`   `cbrt(…)` → `∛(…)`
+* `factorial(n)` → `n!`
+* `log10(x)` → `log₁₀(x)`   `log2(x)` → `log₂(x)`
+
+⚠️ `show="formula"` does not evaluate — `notation`, `precision`, `calcPrec`, and `scope` are ignored.
 
 ---
 
@@ -147,24 +176,8 @@ Later lines can reference earlier variables. Values must use EN notation.
 * No quotes on keys — `{a:1}` not `{"a":1}`
 * Values: EN notation (decimal point), pairs separated by commas
 * `math.unit(5 cm)` auto-quoted — no need for inner quotes
-* With `calcPrec="64/128/256"`, all literals are automatically BigNumber — no need for `math.bignumber()`
-* Values may be mathjs expressions: {angle: pi/4}
-
----
-
-!! KaTeX rendering
-
-KaTeX is used automatically if the KaTeX plugin is installed. Falls back to plain text otherwise.
-
-<$codeblock code="""<$calc show="formula">(a+b)/c</$calc>
-<$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>"""/>
-
-;Automatic conversions:
-* `sqrt(x^2+1)` → `\sqrt{x^{2}+1}`
-* `(a+b)/c` → `\frac{a+b}{c}`
-* `pi` → `\pi`
-
-⚠️ `show="formula"` does not evaluate — `notation`, `precision`, `calcPrec`, and `scope` are ignored.
+* With `calcPrec="64/128/256"`, all literals are automatically BigNumber
+* Values may be mathjs expressions: `{angle: pi/4}`
 
 ---
 
@@ -203,6 +216,6 @@ All expression errors are debounced 200 ms (suppresses flicker while typing).
 |!Situation |!Message |!Silenceable |
 |Unclosed parenthesis |exact position reported |Yes |
 |Unknown identifier |`Unknown function: "sqt" — did you mean "sqrt"?` |Yes |
-|Division by zero |`Division by zero (result is ∞)` |Yes |
-|Complex result |warning with value `0 + 1i` |Yes |
+|Division by zero |`Result is +∞ — division by zero or overflow` |Yes |
 |Trig at calcPrec ≥ 510 |`[DecimalError] Precision limit exceeded` |Yes |
+|Invalid scope |`Problem with the scope attribute` |Yes |

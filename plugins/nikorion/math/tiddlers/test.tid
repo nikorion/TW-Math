@@ -9,6 +9,7 @@ type: text/vnd.tiddlywiki
 \function mode()     [<stateTidd>get[mode]else[inline]]
 \function silence()  [<stateTidd>get[silence]else[no]]
 \function calcPrec() [<stateTidd>get[calcPrec]else[float]]
+\function output()   [<stateTidd>get[output]else[katex]]
 
 \procedure cleanValues()
 <$action-setfield $tiddler=<<stateTidd>> $field="expression" $value="" />
@@ -18,6 +19,7 @@ type: text/vnd.tiddlywiki
 <$action-setfield $tiddler=<<stateTidd>> $field="mode"       $value="inline" />
 <$action-setfield $tiddler=<<stateTidd>> $field="silence"    $value="no" />
 <$action-setfield $tiddler=<<stateTidd>> $field="calcPrec"   $value="float" />
+<$action-setfield $tiddler=<<stateTidd>> $field="output"     $value="katex" />
 \end cleanValues
 
 <style>
@@ -39,6 +41,13 @@ type: text/vnd.tiddlywiki
 </tr>
 <tr>
 <td class="locale-row">
+`output`&nbsp;<$tiddler tiddler=<<stateTidd>>>
+<$radio field="output" value="katex" default="katex">&nbsp;katex&nbsp;(default)</$radio>
+<$radio field="output" value="text">&nbsp;text</$radio>
+</$tiddler></td>
+</tr>
+<tr>
+<td class="locale-row">
 `locale`&nbsp;<$tiddler tiddler=<<stateTidd>>>
 <$radio field="locale" value="en-US" default="en-US">&nbsp;en-US&nbsp;(default)</$radio>
 <$radio field="locale" value="fr-FR">&nbsp;fr-FR</$radio>
@@ -56,7 +65,13 @@ type: text/vnd.tiddlywiki
 <$radio field="notation" value="fixed">&nbsp;fixed</$radio>
 <$radio field="notation" value="scientific">&nbsp;scientific</$radio>
 <$radio field="notation" value="engineering">&nbsp;engineering</$radio>
-</$tiddler>
+<$radio field="notation" value="bin">&nbsp;bin</$radio>
+<$radio field="notation" value="oct">&nbsp;oct</$radio>
+<$radio field="notation" value="hex">&nbsp;hex</$radio>
+</$tiddler></td>
+</tr>
+<tr>
+<td class="locale-row">
 `mode`&nbsp;<$tiddler tiddler=<<stateTidd>>>
 <$radio field="mode" value="inline" default="inline">&nbsp;inline&nbsp;(default)</$radio>
 <$radio field="mode" value="block">&nbsp;block</$radio>
@@ -80,7 +95,7 @@ type: text/vnd.tiddlywiki
 <$edit-text tiddler=<<stateTidd>> field="expression" placeholder="Expression" size=36/>
 <$button class="tc-btn-invisible" actions=<<cleanValues>>>🔄</$button>
 <$list filter="[<stateTidd>has[expression]]">
-<$calc locale=<<locale>> notation=<<notation>> show=<<show>> mode=<<mode>> calcPrec=<<calcPrec>> silence=<<silence>>>
+<$calc output=<<output>> locale=<<locale>> notation=<<notation>> show=<<show>> mode=<<mode>> calcPrec=<<calcPrec>> silence=<<silence>>>
 <$view tiddler=<<stateTidd>> field="expression"/>
 </$calc>
 </$list>

@@ -8,16 +8,26 @@ module-type: widget
  * calc.js — <$calc> widget 🧮
  *
  * Evaluates a math expression (widget body) via mathjs and renders the
- * result via KaTeX if available, or as plain text otherwise.
+ * result as plain text or via KaTeX, depending on the `output` attribute.
  *
  * ── Attributes ───────────────────────────────────────────────────────
  *
+ *   output     {string}   Rendering backend.  Default: "katex".
+ *                         "katex"  render via KaTeX if plugin is installed;
+ *                                  falls back to plain text if plugin absent.
+ *                         "text"   plain text with pretty-printed formulas —
+ *                                  no KaTeX dependency.
+ *
  *   show       {string}   What to display.  Default: "result".
  *                         "result"   evaluate the expression, display result.
- *                         "formula"  convert to LaTeX via toTex(), no evaluation.
- *                         "full"     formula = result in a single KaTeX block.
+ *                         "formula"  display the expression without evaluating.
+ *                                    output="katex": via toTex() → KaTeX.
+ *                                    output="text":  pretty-printed plain text
+ *                                    (π, ·, superscripts, √, ∛, !, log₂…).
+ *                         "full"     formula = result.
  *
- *   mode       {string}   KaTeX display mode.  Default: "inline".
+ *   mode       {string}   KaTeX display mode — ignored when output="text".
+ *                         Default: "inline".
  *                         "inline"   rendered inline with surrounding text.
  *                         "block"    centred display-mode formula (larger).
  *
@@ -80,7 +90,7 @@ module-type: widget
  * Defining them in scope silently shadows the constants.
  *
  * ── Scientific notation input ─────────────────────────────────────────
- * "5e9", "1.5e-3" fully supported.  "5 e9" auto-normalised.
+ * "5e9", "1.5e-3" fully supported.
  *
  * ── calcPrec vs. precision ────────────────────────────────────────────
  * precision  → visible digits (display)
@@ -91,13 +101,20 @@ module-type: widget
  * Expression errors delayed ERROR_DELAY ms (anti-flicker while typing).
  *
  * ── Pipelines ────────────────────────────────────────────────────────
- *   show="result"  normalize → scope → sanitize → cache → evaluate → check → formatResultKatex
- *   show="formula" normalize → parse().toTex() → formatKatexFR
- *   show="full"    normalize → [formula pipeline] + [result pipeline] → join with "="
+ *   output="text"
+ *     show="result"  normalize → scope → sanitize → cache → evaluate → check → format
+ *     show="formula" normalize → prettyprint
+ *     show="full"    normalize → prettyprint + " = " + format
+ *
+ *   output="katex"
+ *     show="result"  normalize → scope → sanitize → cache → evaluate → check → formatResultKatex
+ *     show="formula" normalize → parse().toTex() → formatKatexFR
+ *     show="full"    normalize → [formula pipeline] + [result pipeline] → join with "="
  *
  * ── KaTeX ────────────────────────────────────────────────────────────
- * KaTeX is used automatically if the KaTeX plugin is installed.
- * Falls back to plain text otherwise (for all show= values).
+ * KaTeX is used by default (output="katex") when the KaTeX plugin is
+ * installed.  Falls back to plain text automatically if the plugin is
+ * absent.  Force plain text with output="text".
  */
 
 (function () {
@@ -107,6 +124,7 @@ module-type: widget
   const normalize    = require("$:/plugins/nikorion/math/modules/normalize.js");
   const sanitize     = require("$:/plugins/nikorion/math/modules/sanitize.js");
   const format       = require("$:/plugins/nikorion/math/modules/format.js");
+  const prettyprint  = require("$:/plugins/nikorion/math/modules/prettyprint.js");
   const cache        = require("$:/plugins/nikorion/math/modules/cache.js");
   const scopeBuilder = require("$:/plugins/nikorion/math/modules/scope.js");
   const mathInstance = require("$:/plugins/nikorion/math/modules/mathinstance.js");
@@ -163,7 +181,7 @@ module-type: widget
     const changed = this.computeAttributes();
     if (changed["locale"]  || changed["notation"] || changed["show"] ||
         changed["mode"]    || changed["scope"]    || changed["calcPrec"] ||
-        changed["precision"]) {
+        changed["precision"] || changed["output"]) {
       this.refreshSelf();
       return true;
     }
@@ -186,8 +204,12 @@ module-type: widget
 
     if (outcome.ok) {
       this._cancelErrorTimer();
-      const isBlock = this.getAttribute("mode", "inline") === "block";
-      renderer.displayKatex(this, outcome.tex, isBlock, parent, nextSibling);
+      if (outcome.useKatex) {
+        const isBlock = this.getAttribute("mode", "inline") === "block";
+        renderer.displayKatex(this, outcome.tex, isBlock, parent, nextSibling);
+      } else {
+        renderer.displayText(this, outcome.text, parent, nextSibling);
+      }
       return;
     }
 
@@ -213,14 +235,23 @@ module-type: widget
   // ─────────────────────────────────────────────────────────────────────
   // _evaluate — full pipeline 🔬
   //
-  //   show="result"  normalize → scope → sanitize → cache → evaluate → check → formatResultKatex
-  //   show="formula" normalize → parse().toTex() → formatKatexFR
-  //   show="full"    formula + " = " + result in one LaTeX string
+  //   output="text"
+  //     show="result"  normalize → scope → sanitize → cache → evaluate → check → format
+  //     show="formula" expr (raw)
+  //     show="full"    expr (raw) + " = " + format
   //
-  // Returns { ok: true, tex: "…" } or { ok: false, text: "Error: …" }
+  //   output="katex"
+  //     show="result"  normalize → scope → sanitize → cache → evaluate → check → formatResultKatex
+  //     show="formula" normalize → parse().toTex() → formatKatexFR
+  //     show="full"    normalize → [formula pipeline] + [result pipeline] → join with "="
+  //
+  // Returns { ok: true, useKatex: bool, tex?, text? }
+  //      or { ok: false, text: "Error: …" }
   // ─────────────────────────────────────────────────────────────────────
   CalcWidget.prototype._evaluate = function (expr) {
-    const show      = this.getAttribute("show", "result");
+    const show      = this.getAttribute("show",   "result");
+    const output    = this.getAttribute("output", "katex");
+    const useKatex  = output === "katex";
     const calcPrec  = this.getAttribute("calcPrec", "float");
     const math      = mathInstance.getInstance(calcPrec);
     const localeRaw = this.getAttribute("locale", "en");
@@ -229,14 +260,19 @@ module-type: widget
     try {
       const normalized = normalize.normalize(expr);                               // 1. normalize
 
-      // ── Formula pipeline ───────────────────────────────────────────
-      const formulaTex = (show === "formula" || show === "full")
+      // ── text mode: formula/full use prettyprint, no evaluate needed ──
+      if (!useKatex && show === "formula") {
+        return { ok: true, useKatex: false, text: prettyprint.prettyprint(normalized) };
+      }
+
+      // ── katex formula pipeline ─────────────────────────────────────
+      const formulaTex = (useKatex && (show === "formula" || show === "full"))
         ? format.formatKatexFR(math.parse(normalized).toTex(), locale)
         : null;
 
-      if (show === "formula") return { ok: true, tex: formulaTex };
+      if (useKatex && show === "formula") return { ok: true, useKatex: true, tex: formulaTex };
 
-      // ── Result pipeline ────────────────────────────────────────────
+      // ── result pipeline (shared by text and katex) ─────────────────
       const notation  = this.getAttribute("notation",  "auto");
       // Validate display precision: parseInt("") / parseInt("abc") → NaN →
       // notation default; otherwise clamped to safe Intl/toExponential
@@ -247,9 +283,14 @@ module-type: widget
       const tid       = this.getVariable("currentTiddler");
 
       const scopeAttr = this.getAttribute("scope", "");
-      const varScope  = scopeBuilder.buildScope(                                  // 2. scope
-        scopeAttr, this.wiki, math, normalize, sanitize
-      );
+      let varScope;
+      try {
+        varScope = scopeBuilder.buildScope(                                        // 2. scope
+          scopeAttr, this.wiki, math, normalize, sanitize
+        );
+      } catch (_) {
+        throw new Error("Problem with the scope attribute");
+      }
       sanitize.sanitize(normalized, math, varScope);                              // 3. sanitize
 
       // Key = raw-result identity: calcPrec changes the math instance (and the
@@ -265,11 +306,16 @@ module-type: widget
         cache.set(key, result);
       }
 
-      const resultTex = format.formatResultKatex(result, locale, { notation, precision }); // 7. format
-
-      if (show === "full") return { ok: true, tex: `${formulaTex} = ${resultTex}` };
-
-      return { ok: true, tex: resultTex };
+      if (useKatex) {
+        const resultTex = format.formatResultKatex(result, locale, { notation, precision }); // 7a. format katex
+        if (show === "full") return { ok: true, useKatex: true, tex: `${formulaTex} = ${resultTex}` };
+        return { ok: true, useKatex: true, tex: resultTex };
+      } else {
+        const resultText   = format.format(result, locale, { notation, precision }); // 7b. format text
+        const formulaText  = prettyprint.prettyprint(normalized);                    // 7b. prettyprint
+        if (show === "full") return { ok: true, useKatex: false, text: `${formulaText} = ${resultText}` };
+        return { ok: true, useKatex: false, text: resultText };
+      }
 
     } catch (e) {
       return { ok: false, text: `Error: ${errors.rewriteError(e.message, expr)}` };

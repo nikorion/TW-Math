@@ -9,10 +9,12 @@ module-type: library
  *
  * checkResult(result) → null | string
  *   Detects invalid numeric results that mathjs returns silently instead
- *   of throwing: Infinity, -Infinity, NaN, and complex numbers — for both
- *   native numbers (calcPrec="float") and BigNumber results ("64"/"128"/
- *   "256").  Also catches finite BigNumbers whose magnitude exceeds the
- *   float64 range, since format.js displays via toNumber().
+ *   of throwing: Infinity, -Infinity, NaN — for both native numbers
+ *   (calcPrec="float") and BigNumber results ("64"/"128"/"256").
+ *   Also catches finite BigNumbers whose magnitude exceeds the float64
+ *   range, since format.js displays via toNumber().
+ *   Complex numbers are NOT flagged — they are valid results displayed
+ *   normally by format.js.
  *   Returns an error message string, or null if the result is valid.
  *
  * rewriteError(msg, expr) → string
@@ -52,13 +54,6 @@ module-type: library
         return "Result is too large to display (exceeds the float64 range of \u00B11.8\u00D710^308)";
     }
 
-    // mathjs returns a Complex object when the result has a non-zero imaginary
-    // part: sqrt(-1) → 0+1i,  log(-1) → 0+πi
-    // ⚠️ If "i" is defined in scope it shadows the imaginary unit — result may
-    // then be a plain number rather than a Complex object.
-    if (result?.isComplex && result.im !== 0) {
-      return `Result is a complex number (${result.re} + ${result.im}i) \u2014 check for sqrt() or log() of a negative value`;
-    }
     return null;
   };
 

@@ -137,6 +137,8 @@ module-type: library
   // ── Base-conversion helper (bin / oct / hex) ──────────────────────────
   // Accepts a plain JS number or a mathjs BigNumber.
   // Returns the formatted string ("0b101010", "-0o52", "0xff", …).
+  // Non-integer values are truncated explicitly before formatting — mathjs
+  // does not guarantee integer conversion for float inputs on all platforms.
   // Throws a descriptive Error if the result is a Unit — base conversion
   // of a physical quantity is undefined.
   function formatBase(result, notation) {
@@ -154,7 +156,9 @@ module-type: library
         `notation="${notation}" requires a numeric result`
       );
     }
-    return math.format(num, { notation });
+    // Truncate to integer before base conversion. Math.trunc preserves sign;
+    // math.format handles the prefix ("0b", "0o", "0x") and the minus sign.
+    return math.format(Math.trunc(num), { notation });
   }
 
   // Intl.NumberFormat wrapper — locale-aware grouping and decimal. 🌐
@@ -213,6 +217,11 @@ module-type: library
     }
   }
 
+  // ── Temperature unit display names ────────────────────────────────────
+  // mathjs uses "degC", "degF", "degR" internally; map them to typographic
+  // symbols for display.  kelvin is already "K" in mathjs output.
+  const TEMP_UNIT_DISPLAY = { degC: "°C", degF: "°F", degR: "°R" };
+
   // Split a mathjs Unit result into numeric value + display unit. 📐
   // Returns null if result is not a Unit.
   // Returns { raw } when the numeric part cannot be isolated (e.g. a
@@ -237,6 +246,9 @@ module-type: library
       } catch { /* keep mathjs output */ }
     }
 
+    // Map mathjs internal unit names to typographic display symbols. 🌡️
+    displayUnit = TEMP_UNIT_DISPLAY[displayUnit] ?? displayUnit;
+
     return { num, displayUnit };
   }
 
@@ -249,6 +261,30 @@ module-type: library
 
     const formatted = formatNumber(parts.num, locale, notation, precision);
     return parts.displayUnit ? `${formatted}\u202F${parts.displayUnit}` : formatted;
+  }
+
+  // ── Complex number formatting ─────────────────────────────────────────
+  // Formats a mathjs Complex result as "a + bi" (or "a − bi" for negative
+  // imaginary parts), applying locale-aware formatting to both parts.
+  // Pure real or pure imaginary results are simplified accordingly.
+  function formatComplex(result, locale, notation, precision) {
+    const re = formatNumber(result.re, locale, notation, precision);
+    const im = Math.abs(result.im);
+    const imStr = formatNumber(im, locale, notation, precision);
+    if (result.im === 0) return re;
+    if (result.re === 0) return result.im < 0 ? `\u2212${imStr}i` : `${imStr}i`;
+    const sign = result.im < 0 ? " \u2212 " : " + ";
+    return `${re}${sign}${imStr}i`;
+  }
+
+  function formatComplexKatex(result, locale, notation, precision) {
+    const re = numberToKatex(result.re, locale, notation, precision);
+    const im = Math.abs(result.im);
+    const imTex = numberToKatex(im, locale, notation, precision);
+    if (result.im === 0) return re;
+    if (result.re === 0) return result.im < 0 ? `-${imTex}i` : `${imTex}i`;
+    const sign = result.im < 0 ? " - " : " + ";
+    return `${re}${sign}${imTex}i`;
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -264,6 +300,7 @@ module-type: library
 
     if (typeof result === "number")  return formatNumber(result, locale, notation, precision);
     if (result?.isBigNumber)         return formatNumber(result.toNumber(), locale, notation, precision);
+    if (result?.isComplex)           return formatComplex(result, locale, notation, precision);
     const unitStr = formatUnit(result, locale, notation, precision);
     if (unitStr !== null)            return unitStr;
     return math.format(result, { notation: "fixed", precision: 12 }); // fallback
@@ -296,6 +333,9 @@ module-type: library
     }
 
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
+
+    // ── Complex numbers ────────────────────────────────────────────────
+    if (result?.isComplex) return formatComplexKatex(result, locale, notation, precision);
 
     // ── Units: number and unit obtained separately via splitUnit ──────
     // (never re-parse a formatted string — locale separators make that

@@ -10,8 +10,8 @@ module-type: library
  * Converts a raw user expression into a form that mathjs can parse.
  *
  * Input must use EN/international notation:
- *   • Decimal separator  : point       3.14
- *   • Thousands separator: space or none   1 000 000
+ *   • Decimal separator  : point           3.14
+ *   • Thousands separator: space or comma  1 000 000  1,000,000
  *   • Operators          : standard ASCII or the Unicode aliases below
  *
  * After this pass, the expression contains only ASCII math operators,
@@ -31,8 +31,9 @@ module-type: library
  *  4. Superscript digits  x² → x^2,  a³ → a^3
  *  5. Unicode operators   × → *,  · → *,  ÷ → /,  − → -,  – → -
  *  6. Degree symbol       90° → 90 deg
- *  7. Thousands spaces    1 000 000 → 1000000
- *     (U+0020, U+00A0, U+2009, U+202F between digits only)
+ *  7. Thousands separators  1 000 000 → 1000000  /  1,000,000 → 1000000
+ *     spaces: U+0020, U+00A0, U+2009, U+202F between digits only
+ *     comma:  only when flanked by exactly 3 digits on the right (EN style)
  *
  * Exported:
  *   normalize(expr) → string
@@ -76,16 +77,31 @@ module-type: library
     return s;
   }
 
-  // ── Thousands-space removal ───────────────────────────────────────────
-  // Strips spaces used as thousands separators (U+0020, U+00A0, U+2009,
-  // U+202F) when they appear between two digit characters.
-  // Iterates until stable to handle "1 234 567" in multiple passes. 🗜️
-  function removeThousandsSpaces(s) {
+  // ── Thousands separator removal ───────────────────────────────────────
+  // Strips spaces and EN-style commas used as thousands separators.
+  //
+  // Spaces (U+0020, U+00A0, U+2009, U+202F): removed whenever they appear
+  // between two digit characters.  Iterates until stable to handle
+  // "1 234 567" in multiple passes. 🗜️
+  //
+  // Commas: only stripped when the pattern matches EN thousands grouping —
+  // a comma followed by exactly 3 digits and then a non-digit (or end).
+  // This avoids clobbering function-argument commas like max(1,5).
+  function removeThousandsSeparators(s) {
+    // Pass 1 — comma thousands separators (EN style: \d,\d{3}\b)
+    // Repeat until stable for chained groups: "1,234,567"
     let prev;
+    do {
+      prev = s;
+      s = s.replace(/(\d),(\d{3})(?!\d)/g, "$1$2");
+    } while (s !== prev);
+
+    // Pass 2 — space thousands separators
     do {
       prev = s;
       s = s.replace(/(\d)[\u0020\u00A0\u2009\u202F](\d)/g, "$1$2");
     } while (s !== prev);
+
     return s;
   }
 
@@ -128,8 +144,8 @@ module-type: library
     // ── 6. Degree symbol → mathjs 'deg' unit ───────────────────────────
     s = s.replace(/(\d)\u00B0/g, "$1 deg"); // °
 
-    // ── 7. Thousands spaces → remove ───────────────────────────────────
-    s = removeThousandsSpaces(s);
+    // ── 7. Thousands separators → remove ───────────────────────────────
+    s = removeThousandsSeparators(s);
 
     return s;
   };

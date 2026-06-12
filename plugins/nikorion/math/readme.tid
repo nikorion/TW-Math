@@ -8,20 +8,21 @@ A lightweight TiddlyWiki widget integrating Math.js for inline expression evalua
 Key capabilities:
 
 * locale-aware output formatting (EN/FR/any BCP-47)
-* input in standard EN notation (decimal point, scientific notation)
+* input in EN notation: decimal point, thousands separators (space or EN comma), scientific notation
 * configurable numeric precision: native float (default) or BigNumber (64 / 128 / 256 significant digits)
 * unit-aware output with automatic simplification and explicit conversion
 * LRU result cache for performance
 * static expression validation with friendly error messages and "did you mean?" suggestions
-* KaTeX rendering for results and formulas (automatic if KaTeX plugin is installed)
+* KaTeX rendering by default when plugin is installed; graceful pretty-printed plain text fallback
 
 ---
 
 !! Attributes
 
 |!Attribute |!Values |!Default |!Description |
-| `show` |`result` · `formula` · `full` |`result` |What to display — result only, formula only, or both |
-| `mode` |`inline` · `block` |`inline` |KaTeX display mode — inline or centred block |
+| `output` |`katex` · `text` |`katex` |Rendering backend — KaTeX or plain text |
+| `show` |`result` · `formula` · `full` |`result` |What to display |
+| `mode` |`inline` · `block` |`inline` |KaTeX display mode |
 | `locale` |`en` · `en-US` · `fr` · `fr-FR` · BCP-47 |`en` |Output number format (separators, decimal symbol) |
 | `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
 | `precision` |positive integer |6 |Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
@@ -29,16 +30,24 @@ Key capabilities:
 | `scope` |tiddler title or `{a:1, b:2}` |— |Variable scope injected into the expression |
 | `silence` |`yes` · `no` |`no` |Suppress expression error display |
 
+!!! `output` attribute
+
+;`output="katex"` (default)
+:Renders via KaTeX when the plugin is installed. Falls back to pretty-printed plain text automatically if the plugin is absent.
+
+;`output="text"`
+:Always renders as pretty-printed plain text (π, ·, superscripts, √, ∛, !, log₂…). No KaTeX dependency.
+
 !!! `show` attribute
 
 ;`show="result"` (default)
-:Evaluates the expression and renders the numeric result via KaTeX (or plain text if KaTeX unavailable).
+:Evaluates the expression and renders the numeric result.
 
 ;`show="formula"`
-:Converts the expression to LaTeX via `math.parse().toTex()` and renders it via KaTeX. The expression is ''not'' evaluated. `notation`, `precision`, `calcPrec`, and `scope` are ignored.
+:Typesets the expression without evaluating it. With `output="katex"`, converts to LaTeX via `math.parse().toTex()`. With `output="text"`, renders as pretty-printed plain text. `notation`, `precision`, `calcPrec`, and `scope` are ignored.
 
 ;`show="full"`
-:Renders the formula and its evaluated result together: `formula = result` in a single KaTeX block.
+:Renders the formula and its evaluated result together: `formula = result`. The formula part follows the same rendering rules as `show="formula"`.
 
 !!! `mode` attribute
 
@@ -53,7 +62,7 @@ Key capabilities:
 |!Value |!Behaviour |!Default `precision` |
 | `auto` |decimal for most values; scientific for |x| < 1e-6 or |x| > 1e12 |6 |
 | `fixed` |always decimal |6 |
-| `scientific` |always scientific: `1.414 \times 10^{3}` |6 |
+| `scientific` |always scientific: `1.234 × 10³` |6 |
 | `engineering` |exponent always a multiple of 3 |6 |
 | `bin` |binary integer, prefixed `0b` — e.g. `0b101010` |ignored |
 | `oct` |octal integer, prefixed `0o` — e.g. `0o52` |ignored |
@@ -61,14 +70,11 @@ Key capabilities:
 
 ''bin/oct/hex rules:''
 
-* `locale` and `precision` are ignored — output is always plain ASCII.
+* `locale` and `precision` are ignored.
 * BigNumber results are converted via `toNumber()` before formatting.
 * Negative values are accepted: `-42` → `-0b101010`.
-* Non-integer values are truncated silently by math.js: `3.7` → `0b11`.
+* Non-integer values are truncated silently: `3.7` → `0b11`.
 * Unit results produce an error — extract the numeric value first with `number(expr, unit)`.
-* KaTeX output uses `\texttt{}` for monospace rendering.
-
-All decimal/scientific modes default to 6 — readable without being lossy for most scientific/technical uses. Math.js generic default is 14 (matches IEEE 754 double precision but too verbose for a display widget). The `precision` attribute overrides this per widget.
 
 !!! When is `silence="yes"` useful?
 
@@ -84,11 +90,10 @@ The 200 ms debounce already covers momentary invalidity while typing. `silence` 
 
 !! Input notation
 
-Input must use EN/international notation:
-
 |!Format |!Example |
 |Decimal point |`3.14` |
 |Thousands space (U+0020, U+00A0, U+2009, U+202F) |`1 000 000` |
+|Thousands comma (EN style) |`1,000,000` |
 |Scientific notation |`5e9` · `1.5e-3` · `2.5e+6` |
 
 ⚠️ Do ''not'' write `5 * e9` — that means 5 times the undefined symbol `e9`.
@@ -135,9 +140,9 @@ Short aliases: `en` → `en-US`, `fr` → `fr-FR`. Any valid BCP-47 tag works.
 <$calc show="formula">sqrt(2)</$calc>
 <$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>"""/>
 
-!!! Block display
+!!! Force plain text output
 
-<$codeblock code="""<$calc mode="block">pi * r^2</$calc>"""/>
+<$codeblock code="""<$calc output="text" show="formula">pi * r^2</$calc>"""/>
 
 !!! Silence errors
 
@@ -227,7 +232,7 @@ Switch only when float produces a ''visibly wrong result'':
 
 `calcPrec` controls internal accuracy. `precision` controls visible digits. Raising `calcPrec` does ''not'' add visible digits — it only reduces rounding errors in intermediate calculations.
 
-Note on BigNumber digit counts: `calcPrec="64"` means 64 ''decimal'' significant digits (~213 bits), not 64 bits. Do not confuse with IEEE 754 bit widths (`calcPrec="128"` is ~425 bits).
+Note on BigNumber digit counts: `calcPrec="64"` means 64 ''decimal'' significant digits (~213 bits), not 64 bits.
 
 !!! Performance thresholds
 
@@ -255,6 +260,9 @@ The LRU cache (500 entries) means each unique expression is evaluated only once 
 ---
 
 !! Version history
+
+;v0.3.0 — 2026-06-13
+:New `output` attribute (`katex` default / `text`). KaTeX is now opt-out rather than opt-in: active by default when the plugin is installed, graceful plain-text fallback otherwise. Plain text mode uses a new pretty-printer (π, ·, superscripts, √, ∛, !, log₂…) instead of raw expression strings. Complex numbers are now displayed normally instead of producing an error. Temperatures render with `°C` / `°F` symbols. Integer-base notation (`bin`/`oct`/`hex`) now truncates non-integer values correctly. EN-style comma accepted as thousands separator on input (`1,000,000`).
 
 ;v0.2.0 — 2026-06-12
 :Simplified API: `show` and `mode` replace `render`; input is now EN-only; all output passes through KaTeX (with plain-text fallback). New `show="full"` mode renders formula and result together. `notation` replaces `scientific`. `scope` replaces `data`. `calcPrec` replaces `precision` for calculation precision; `precision` is now the display digit count. Added `notation="bin"`, `"oct"`, `"hex"` for integer-base output.
