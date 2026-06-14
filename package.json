@@ -1,0 +1,22 @@
+{
+  "name": "tw-math",
+  "version": "0.1.0",
+  "description": "TiddlyWiki plugin providing a <$calc> widget powered by Math.js",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "lint":  "eslint \"plugins/nikorion/math/modules/*.js\"",
+    "dev":   "concurrently \"nodemon\" \"livereload plugins/nikorion/math --wait 1500 --exts js,tid,json,svg,meta\"",
+    "build": "tiddlywiki devwiki --build plugin-json html"
+  },
+  "devDependencies": {
+    "@eslint/js":   "^9.0.0",
+    "livereload":   "^0.9.3",
+    "nodemon":      "^3.0.0",
+    "concurrently": "^9.0.0",
+    "eslint":       "^9.0.0",
+    "globals":      "^16.0.0",
+    "tiddlywiki":   "^5.3.6"
+  }
+}

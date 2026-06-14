@@ -1,0 +1,6 @@
+node_modules/
+dist/
+devwiki/tiddlers/$__StoryList.tid
+devwiki/tiddlers/$__HistoryList.tid
+.DS_Store
+Thumbs.db

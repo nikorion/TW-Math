@@ -1,0 +1,5 @@
+{
+  "watch": ["plugins/nikorion/math"],
+  "ext": "*",
+  "exec": "tiddlywiki devwiki --listen port=8485"
+}

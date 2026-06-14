@@ -251,7 +251,7 @@ module-type: widget
   CalcWidget.prototype._evaluate = function (expr) {
     const show      = this.getAttribute("show",   "result");
     const output    = this.getAttribute("output", "katex");
-    const useKatex  = output === "katex";
+    const useKatex  = output === "katex" && renderer.isKatexAvailable(this);
     const calcPrec  = this.getAttribute("calcPrec", "float");
     const math      = mathInstance.getInstance(calcPrec);
     const localeRaw = this.getAttribute("locale", "en");

@@ -230,7 +230,7 @@ module-type: library
     if (!result?.units) return null;
 
     const str   = result.toString();
-    const match = str.match(/^(-?[\d.]+(?:e[+\-]?\d+)?)\s*(.*)$/i);
+    const match = str.match(/^(-?[\d.]+(?:e[+-]?\d+)?)\s*(.*)$/i);
     if (!match) return { raw: str };
 
     let num         = parseFloat(match[1]);

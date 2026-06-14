@@ -164,7 +164,7 @@ module-type: library
    *
    * Returns the rewritten string, or throws with a key-prefixed message.
    */
-  function normalizeInlineNumbers(raw, normalizeModule, sanitizeModule, math) {
+  function normalizeInlineNumbers(raw, normalizeModule, _sanitizeModule, _math) {
     // Replace each  key: value  pair.  We only attempt normalisation on
     // values that consist purely of number-like characters (digits, spaces,
     // commas, dots, +, -, e/E for scientific notation).
@@ -178,7 +178,7 @@ module-type: library
         if (/^["']|^math\.|^unit\(|^bignumber\(|^\[|^true$|^false$|^null$/.test(trimmed)) return match;
 
         // Only attempt if it looks like a number (digits + optional separators).
-        if (!/^[+\-]?[\d.,\s\u00A0\u2009\u202Fe]+$/i.test(trimmed)) return match;
+        if (!/^[+-]?[\d.,\s\u00A0\u2009\u202Fe]+$/i.test(trimmed)) return match;
 
         try {
           const normalized = normalizeModule.normalize(trimmed);

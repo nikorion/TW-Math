@@ -4,12 +4,10 @@ type: text/vnd.tiddlywiki
 
 ! `<$calc>` widget — examples
 
-!! Arithmetic & functions
+!! Arithmetic
 
 | Expression | Result |h
 | `<$calc>1 + 2 * 3</$calc>` | <$calc>1 + 2 * 3</$calc> |
-| `<$calc>1 000 000 / 3</$calc>` (thousands space) | <$calc>1 000 000 / 3</$calc> |
-| `<$calc>1,000,000 / 3</$calc>` (thousands comma) | <$calc>1,000,000 / 3</$calc> |
 | `<$calc>√144</$calc>` (√ unicode) | <$calc>√144</$calc> |
 | `<$calc>∛27</$calc>` (∛ unicode) | <$calc>∛27</$calc> |
 | `<$calc>2² + 3²</$calc>` (superscripts) | <$calc>2² + 3²</$calc> |

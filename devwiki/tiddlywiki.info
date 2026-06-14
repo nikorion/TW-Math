@@ -1,0 +1,24 @@
+{
+  "description": "TW-Math development wiki",
+  "plugins": [
+    "tiddlywiki/filesystem",
+    "tiddlywiki/tiddlyweb",
+    "nikorion/math",
+    "tiddlywiki/katex",
+    "tiddlywiki/highlight"
+  ],
+  "themes": [
+    "tiddlywiki/vanilla"
+  ],
+  "pluginPath": "../plugins",
+  "build": {
+    "plugin-json": [
+      "--output", "dist",
+      "--savetiddler", "$:/plugins/nikorion/math", "TW-Math-Plugin.json", "application/json"
+    ],
+    "html": [
+      "--output", "docs",
+      "--rendertiddler", "$:/core/save/all", "TW-Math-Wiki.html", "text/plain"
+    ]
+  }
+}

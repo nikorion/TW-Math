@@ -24,6 +24,15 @@ module-type: library
 (function () {
   "use strict";
 
+  // Cached result — null means unchecked, true/false means checked.
+  var _katexAvailable = null;
+
+  exports.isKatexAvailable = function isKatexAvailable(widget) {
+    if (_katexAvailable !== null) return _katexAvailable;
+    _katexAvailable = !!(widget.widgetClasses && widget.widgetClasses.katex);
+    return _katexAvailable;
+  };
+
   exports.clearOutput = function clearOutput(widget) {
     widget.removeChildDomNodes();
     widget._katexWidget = null;

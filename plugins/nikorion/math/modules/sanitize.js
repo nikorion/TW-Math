@@ -96,7 +96,7 @@ module-type: library
   exports.sanitize = function sanitize(expr, math, varScope = {}) {
     // Strip scientific-notation literals so "e" in "5e9" is never treated
     // as an identifier token.
-    const strippedForTokens = expr.replace(/\d+\.?\d*[eE][+\-]?\d+/g, "0");
+    const strippedForTokens = expr.replace(/\d+\.?\d*[eE][+-]?\d+/g, "0");
 
     for (const token of (strippedForTokens.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) ?? [])) {
       if (typeof math[token] !== "undefined") continue;        // known mathjs symbol
