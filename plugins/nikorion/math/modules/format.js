@@ -19,8 +19,8 @@ module-type: library
  *
  * Decimal / scientific family — locale-aware, precision-controlled:
  *
- *   "auto"        Widget decides: scientific for |x| < 1e-6 or |x| > 1e12,
- *                 decimal otherwise.  Precision = max decimal places (default 6).
+ *   "auto"        Widget decides: scientific for |x| < 1e-3 or |x| >= 1e4 (> 4 sig. figs.),
+ *                 decimal otherwise (ISO 80000-1).  Precision = significant digits (default 6).
  *
  *   "fixed"       Always decimal notation.
  *                 Precision = decimal places after the point (default 6).
@@ -58,11 +58,9 @@ module-type: library
  * ── Math.js generic defaults (for reference) ─────────────────────────
  * math.js out-of-the-box uses 14 significant digits for all notations,
  * and "auto" switches to scientific below 1e-3 or above 1e5.
- * That matches IEEE 754 double precision but is verbose for a display widget.
- * This plugin uses 6 significant digits across all modes — readable and
- * sufficient for most scientific/technical uses, matching common software
- * conventions (MATLAB, Wolfram Alpha, etc.).  Users can override per widget
- * with the `precision` attribute.
+ * This plugin uses 6 significant digits and follows ISO 80000-1 thresholds:
+ * scientific for |x| < 1e-3 or |x| >= 1e4 (more than 4 significant figures).
+ * Users can override per widget with the `precision` attribute.
  *
  * Note on BigNumber digit counts: `precision="64"` means 64 *decimal*
  * significant digits (~213 bits), not 64 bits.  Do not confuse with
@@ -94,6 +92,22 @@ module-type: library
   "use strict";
 
   const math = require("$:/plugins/nikorion/math/modules/math.js");
+
+  const NNBSP = " "; // NARROW NO-BREAK SPACE (U+202F) — ISO 80000-1 thin space around ×
+
+  // ── Unicode superscript map for scientific exponents ─────────────────
+  const SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³",
+                "4": "⁴", "5": "⁵", "6": "⁶",
+                "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
+  function toSup(str) { return String(str).split("").map(function(c) { return SUP[c] || c; }).join(""); }
+
+  // Remove trailing zeros (and trailing dot) from a mantissa string.
+  // Only used when precision is not explicitly set by the user.
+  // "1.4140" → "1.414"  |  "1.0000" → "1"  |  "1." → "1"
+  function stripTrailingZerosMantissa(m) {
+    if (m.indexOf(".") === -1) return m;
+    return m.replace(/\.?0+$/, "");
+  }
 
   // ── Integer-base notation set ─────────────────────────────────────────
   // bin/oct/hex bypass locale, precision, and Intl formatting entirely.
@@ -163,11 +177,26 @@ module-type: library
 
   // Intl.NumberFormat wrapper — locale-aware grouping and decimal. 🌐
   // Replaces any space with narrow no-break space (U+202F) per ISO 80000.
+  // Used by notation="fixed": precision = decimal places after the point.
   function intlFormat(num, locale, fractionDigits) {
     return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: fractionDigits,
-    }).format(num).replace(/ /g, "\u202F");
+    }).formatToParts(num).map(function(p) {
+      return p.type === "group" ? NNBSP : p.value;
+    }).join("");
+  }
+
+  // Significant-figures variant — used by notation="auto" in decimal range.
+  // Consistent with scientific/engineering: precision = significant digits.
+  // When precisionExplicit, sets minimum = maximum so trailing zeros are kept.
+  function intlFormatSigFigs(num, locale, precision, precisionExplicit) {
+    var opts = precisionExplicit
+      ? { minimumSignificantDigits: precision, maximumSignificantDigits: precision }
+      : { maximumSignificantDigits: precision };
+    return new Intl.NumberFormat(locale, opts).formatToParts(num).map(function(p) {
+      return p.type === "group" ? NNBSP : p.value;
+    }).join("");
   }
 
   // Engineering notation via mathjs — returns "1.4145e+6" style. ⚙️
@@ -181,35 +210,39 @@ module-type: library
     return { mantissa, exp: parseInt(expStr, 10) };
   }
 
+  // ISO 80000-1 plain-text scientific notation: mantissa NNBSP× NNBSP 10^exp.
+  // Uses Unicode superscripts for the exponent (e.g. 10⁻⁶ instead of 10^-6).
+  function sciStr(mantissa, exp, isFR) {
+    const m = isFR ? mantissa.replace(".", ",") : mantissa;
+    if (exp === 0) return m;
+    return m + NNBSP + "×" + NNBSP + "10" + toSup(exp);
+  }
+
   // Format a plain number to a plain string (text fallback). 🔢
-  function formatNumber(num, locale, notation, precision) {
+  function formatNumber(num, locale, notation, precision, precisionExplicit) {
     const abs = Math.abs(num);
+    function clean(m) { return precisionExplicit ? m : stripTrailingZerosMantissa(m); }
 
     switch (notation) {
       case "scientific": {
         const raw = num.toExponential(precision - 1); // "1.4140e-6"
-        if (locale === "fr-FR") {
-          const { mantissa, exp } = splitSci(raw);
-          return `${mantissa.replace(".", ",")} \u00D7 10^${exp}`;
-        }
-        return raw;
+        const { mantissa, exp } = splitSci(raw);
+        return sciStr(clean(mantissa), exp, locale === "fr-FR");
       }
 
       case "engineering": {
         const raw = engineeringRaw(num, precision);
-        return locale === "fr-FR" ? raw.replace(".", ",") : raw;
+        const { mantissa, exp } = splitSci(raw);
+        return sciStr(clean(mantissa), exp, locale === "fr-FR");
       }
 
       case "auto":
-        if (num !== 0 && (abs < 1e-6 || abs > 1e12)) {
+        if (num !== 0 && (abs < 1e-3 || abs >= 1e4)) {
           const raw = num.toExponential(precision - 1);
-          if (locale === "fr-FR") {
-            const { mantissa, exp } = splitSci(raw);
-            return `${mantissa.replace(".", ",")} \u00D7 10^${exp}`;
-          }
-          return raw;
+          const { mantissa, exp } = splitSci(raw);
+          return sciStr(clean(mantissa), exp, locale === "fr-FR");
         }
-        return intlFormat(num, locale, precision);
+        return intlFormatSigFigs(num, locale, precision, precisionExplicit);
 
       case "fixed":
       default:
@@ -254,12 +287,12 @@ module-type: library
 
   // Format a mathjs Unit result to a plain string. 📐
   // Returns null if result is not a Unit.
-  function formatUnit(result, locale, notation, precision) {
+  function formatUnit(result, locale, notation, precision, precisionExplicit) {
     const parts = splitUnit(result);
     if (!parts)    return null;
     if (parts.raw) return parts.raw;
 
-    const formatted = formatNumber(parts.num, locale, notation, precision);
+    const formatted = formatNumber(parts.num, locale, notation, precision, precisionExplicit);
     return parts.displayUnit ? `${formatted}\u202F${parts.displayUnit}` : formatted;
   }
 
@@ -267,20 +300,20 @@ module-type: library
   // Formats a mathjs Complex result as "a + bi" (or "a − bi" for negative
   // imaginary parts), applying locale-aware formatting to both parts.
   // Pure real or pure imaginary results are simplified accordingly.
-  function formatComplex(result, locale, notation, precision) {
-    const re = formatNumber(result.re, locale, notation, precision);
+  function formatComplex(result, locale, notation, precision, precisionExplicit) {
+    const re = formatNumber(result.re, locale, notation, precision, precisionExplicit);
     const im = Math.abs(result.im);
-    const imStr = formatNumber(im, locale, notation, precision);
+    const imStr = formatNumber(im, locale, notation, precision, precisionExplicit);
     if (result.im === 0) return re;
     if (result.re === 0) return result.im < 0 ? `\u2212${imStr}i` : `${imStr}i`;
     const sign = result.im < 0 ? " \u2212 " : " + ";
     return `${re}${sign}${imStr}i`;
   }
 
-  function formatComplexKatex(result, locale, notation, precision) {
-    const re = numberToKatex(result.re, locale, notation, precision);
+  function formatComplexKatex(result, locale, notation, precision, precisionExplicit) {
+    const re = numberToKatex(result.re, locale, notation, precision, precisionExplicit);
     const im = Math.abs(result.im);
-    const imTex = numberToKatex(im, locale, notation, precision);
+    const imTex = numberToKatex(im, locale, notation, precision, precisionExplicit);
     if (result.im === 0) return re;
     if (result.re === 0) return result.im < 0 ? `-${imTex}i` : `${imTex}i`;
     const sign = result.im < 0 ? " - " : " + ";
@@ -291,17 +324,18 @@ module-type: library
   // format (exported) — plain text output ✨
   // ─────────────────────────────────────────────────────────────────────
   exports.format = function format(result, locale, options = {}) {
-    const notation  = options.notation  ?? "auto";
+    const notation          = options.notation          ?? "auto";
+    const precisionExplicit = options.precisionExplicit ?? false;
 
     // ── Integer-base modes: locale and precision are bypassed entirely ──
     if (BASE_NOTATIONS.has(notation)) return formatBase(result, notation);
 
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
 
-    if (typeof result === "number")  return formatNumber(result, locale, notation, precision);
-    if (result?.isBigNumber)         return formatNumber(result.toNumber(), locale, notation, precision);
-    if (result?.isComplex)           return formatComplex(result, locale, notation, precision);
-    const unitStr = formatUnit(result, locale, notation, precision);
+    if (typeof result === "number")  return formatNumber(result, locale, notation, precision, precisionExplicit);
+    if (result?.isBigNumber)         return formatNumber(result.toNumber(), locale, notation, precision, precisionExplicit);
+    if (result?.isComplex)           return formatComplex(result, locale, notation, precision, precisionExplicit);
+    const unitStr = formatUnit(result, locale, notation, precision, precisionExplicit);
     if (unitStr !== null)            return unitStr;
     return math.format(result, { notation: "fixed", precision: 12 }); // fallback
   };
@@ -323,7 +357,8 @@ module-type: library
   //   unit FR:        "9,81 m / s^2"        → "9{,}81\,\text{m / s^2}"
   // ─────────────────────────────────────────────────────────────────────
   exports.formatResultKatex = function formatResultKatex(result, locale, options = {}) {
-    const notation  = options.notation  ?? "auto";
+    const notation          = options.notation          ?? "auto";
+    const precisionExplicit = options.precisionExplicit ?? false;
 
     // ── Integer-base modes: locale and precision are bypassed entirely ──
     // formatBase throws a descriptive Error for Unit results.
@@ -335,7 +370,7 @@ module-type: library
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
 
     // ── Complex numbers ────────────────────────────────────────────────
-    if (result?.isComplex) return formatComplexKatex(result, locale, notation, precision);
+    if (result?.isComplex) return formatComplexKatex(result, locale, notation, precision, precisionExplicit);
 
     // ── Units: number and unit obtained separately via splitUnit ──────
     // (never re-parse a formatted string — locale separators make that
@@ -343,7 +378,7 @@ module-type: library
     if (result?.units) {
       const parts = splitUnit(result);
       if (parts.raw) return `\\text{${parts.raw}}`;
-      const numTex  = numberToKatex(parts.num, locale, notation, precision);
+      const numTex  = numberToKatex(parts.num, locale, notation, precision, precisionExplicit);
       const unitTex = parts.displayUnit ? `\\,\\text{${parts.displayUnit}}` : "";
       return numTex + unitTex;
     }
@@ -353,7 +388,7 @@ module-type: library
               : result?.isBigNumber        ? result.toNumber()
               : null;
 
-    if (num !== null) return numberToKatex(num, locale, notation, precision);
+    if (num !== null) return numberToKatex(num, locale, notation, precision, precisionExplicit);
 
     // ── Fallback: matrices, fractions, etc. ───────────────────────────
     return `\\text{${exports.format(result, locale, options)}}`;
@@ -361,64 +396,78 @@ module-type: library
 
   // Format a plain number to a KaTeX-ready LaTeX string. 🔬
   // Same notation rules as formatNumber, but LaTeX output.
-  function numberToKatex(num, locale, notation, precision) {
+  function numberToKatex(num, locale, notation, precision, precisionExplicit) {
     const isFR = locale === "fr-FR";
     const abs  = Math.abs(num);
     const useSci = notation === "scientific"
                 || notation === "engineering"
-                || (notation === "auto" && num !== 0 && (abs < 1e-6 || abs > 1e12));
+                || (notation === "auto" && num !== 0 && (abs < 1e-3 || abs >= 1e4));
 
     if (useSci) {
       const raw = notation === "engineering"
         ? engineeringRaw(num, precision)
         : num.toExponential(precision - 1);
       const { mantissa, exp } = splitSci(raw);
-      const mantissaTex = isFR
-        ? mantissa.replace(".", "{,}")
-        : mantissa;
+      const m = precisionExplicit ? mantissa : stripTrailingZerosMantissa(mantissa);
+      const mantissaTex = isFR ? m.replace(".", "{,}") : m;
+      if (exp === 0) return mantissaTex;
       return `${mantissaTex} \\times 10^{${exp}}`;
     }
 
     // Decimal: use Intl then convert separators to LaTeX. 🔢
-    const plain = intlFormat(num, locale, precision);
+    // auto → significant digits (ISO 80000-1); fixed → decimal places.
+    const plain = notation === "fixed"
+      ? intlFormat(num, locale, precision)
+      : intlFormatSigFigs(num, locale, precision, precisionExplicit);
     return numericToKatex(plain, isFR);
   }
 
   // Convert a formatted decimal string to LaTeX. 🔄
-  //   EN "1,414.5"  → "1\,414.5"       (comma = thousands sep → \,)
-  //   FR "1 414,5"  → "1\,414{,}5"     (space = thousands sep → \,, comma = decimal → {,})
+  //   EN "1 414.5"  → "1\,414.5"      (NNBSP = thousands sep → \,)
+  //   FR "1 414,5"  → "1\,414{,}5"    (NNBSP = thousands, comma = decimal)
+  // Both locales now produce NNBSP for grouping (intlFormat uses formatToParts).
   function numericToKatex(plain, isFR) {
     if (isFR) {
-      // ⚠️ Decimal comma FIRST: the "\," inserted for thousands spaces
-      // contains a comma that would otherwise match /,(?=\d)/ and become
-      // "\{,}" ("1 414,5" → "1\{,}414{,}5" instead of "1\,414{,}5").
+      // Decimal comma FIRST: the "\," inserted for thousands spaces
+      // contains a comma that would otherwise match /,(?=\d)/.
       return plain
-        .replace(/,(?=\d)/g, "{,}")          // decimal comma → {,}
-        .replace(/[\u202F\u00A0 ]/g, "\\,"); // thousands spaces → \,
+        .replace(/,(?=\d)/g, "{,}")              // FR decimal comma → {,}
+        .replace(/[\u202F\u00A0]/g, "\\,");      // NNBSP/NBSP thousands → \,
     }
-    // EN: comma = thousands sep → \,
-    return plain.replace(/,(?=\d{3})/g, "\\,");
+    // EN: intlFormat now outputs NNBSP (not comma) for thousands grouping.
+    return plain.replace(/[\u202F\u00A0]/g, "\\,");
   }
 
 
-  // formatKatexFR — formula post-processing 🇫🇷
+  // formatKatexFR — formula number formatting for KaTeX output 🔢
   //
-  // Post-processes a toTex() string for French typographic style.
-  // Only active for "fr" / "fr-FR".
+  // Post-processes a toTex() string so that numbers in formulas render
+  // consistently with show="result" (which uses formatResultKatex).
   //
-  // toTex() converts numbers ≥ 100 000 to scientific notation automatically,
-  // so grouping applies to integers ≥ 1 000 that toTex() leaves as plain digits.
+  // toTex() leaves integers ungrouped and uses "." as decimal separator.
+  // This function aligns the formula rendering with the result rendering:
   //
-  //   Decimal point → comma:  3.14   →  3,14
-  //   Thousands grouping:     1000   →  1\,000   99999 → 99\,999
+  //   FR decimal point → {,}:   3.14   →  3{,}14   (no extra KaTeX comma spacing)
+  //   Thousands grouping:        1000   →  1\,000   (all locales, ISO 80000-1)
   exports.formatKatexFR = function formatKatexFR(tex, locale) {
-    if (locale !== "fr" && locale !== "fr-FR") return tex;
+    const isFR = locale === "fr" || locale === "fr-FR";
+    let s = tex;
 
-    // Step 1 — decimal point → decimal comma (between digits only).
-    let s = tex.replace(/(\d)\.(\d)/g, "$1,$2");
+    // Step 0: scientific notation — math.js toTex() converts large/small numbers
+    // to e.g. "5 \cdot 10^{+7}"; ISO 80000-1 requires \times for powers-of-10,
+    // and the leading '+' on positive exponents is dropped.
+    s = s.replace(/\\cdot\s*10\^\{([+-]?\d+)\}/g, function(_, exp) {
+      return '\\times 10^{' + exp.replace(/^\+/, '') + '}';
+    });
 
-    // Step 2 — thousands grouping with \, for integers ≥ 1 000.
-    // toTex() handles ≥ 6 digits via scientific notation.
+    if (isFR) {
+      // Step 1 — decimal point → {,} (KaTeX form: no extra spacing around comma).
+      s = s.replace(/(\d)\.(\d)/g, "$1{,}$2");
+    }
+
+    // Step 2 — thousands grouping with \, for integers ≥ 1 000 (all locales).
+    // After FR step 1, decimal numbers look like "3{,}14" — the "{" stops the
+    // regex before the fractional part, so only the integer part gets grouped.
     s = s.replace(/\d[\d,]*/g, (numStr) => {
       const parts   = numStr.split(",");
       const intPart = parts[0];

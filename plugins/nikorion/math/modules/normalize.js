@@ -30,7 +30,7 @@ module-type: library
  *  3. Unicode constants   π → pi,  τ → (2*pi),  ∞ → Infinity,  ℯ → e
  *  4. Superscript digits  x² → x^2,  a³ → a^3
  *  5. Unicode operators   × → *,  · → *,  ÷ → /,  − → -,  – → -
- *  6. Degree symbol       90° → 90 deg
+ *  6. Degree symbol       90° or 90 ° → 90 deg  (optional space before °)
  *  7. Thousands separators  1 000 000 → 1000000  /  1,000,000 → 1000000
  *     spaces: U+0020, U+00A0, U+2009, U+202F between digits only
  *     comma:  only when flanked by exactly 3 digits on the right (EN style)
@@ -96,10 +96,15 @@ module-type: library
       s = s.replace(/(\d),(\d{3})(?!\d)/g, "$1$2");
     } while (s !== prev);
 
-    // Pass 2 — space thousands separators
+    // Pass 2a — U+202F (NARROW NO-BREAK SPACE): strip everywhere.
+    // Appears as thousands sep between digits, or as ISO thin space around ×
+    // in formatted scientific output — neither role is meaningful for mathjs.
+    s = s.replace(/\u202F/g, "");
+
+    // Pass 2b — other space variants: strip only between digits (thousands seps).
     do {
       prev = s;
-      s = s.replace(/(\d)[\u0020\u00A0\u2009\u202F](\d)/g, "$1$2");
+      s = s.replace(/(\d)[\u0020\u00A0\u2009](\d)/g, "$1$2");
     } while (s !== prev);
 
     return s;
@@ -142,7 +147,7 @@ module-type: library
       .replaceAll("\u2010", "-"); // ‐  hyphen (U+2010)
 
     // ── 6. Degree symbol → mathjs 'deg' unit ───────────────────────────
-    s = s.replace(/(\d)\u00B0/g, "$1 deg"); // °
+    s = s.replace(/(\d)[\u0020\u00A0\u2009\u202F]?\u00B0/g, "$1 deg"); // °  (optional space before °)
 
     // ── 7. Thousands separators → remove ───────────────────────────────
     s = removeThousandsSeparators(s);

@@ -34,15 +34,34 @@ module-type: library
   };
 
   exports.clearOutput = function clearOutput(widget) {
-    widget.removeChildDomNodes();
+    // Remove only the previously rendered OUTPUT nodes (text node or KaTeX
+    // span — both pushed onto widget.domNodes).  Do NOT call
+    // removeChildDomNodes() here: in TiddlyWiki that delegates to destroy(),
+    // which wipes widget.children — i.e. the body widgets used to compute the
+    // expression.  Without them, refreshChildren() can no longer detect edits
+    // and the result stays frozen after the first character.  See calc.js
+    // refresh(). 🧊
+    for (const node of widget.domNodes) {
+      if (node.parentNode) node.parentNode.removeChild(node);
+    }
+    widget.domNodes = [];
     widget._katexWidget = null;
   };
 
-  exports.displayText = function displayText(widget, text, parent, nextSibling) {
+  exports.displayText = function displayText(widget, text, parent, nextSibling, isBlock) {
     exports.clearOutput(widget);
-    const node = widget.document.createTextNode(text);
-    parent.insertBefore(node, nextSibling);
-    widget.domNodes.push(node);
+    if (isBlock) {
+      const div = widget.document.createElement("div");
+      div.className = "tc-calc-block";
+      div.style.cssText = "display:block;text-align:center;margin:0.5em 0";
+      div.appendChild(widget.document.createTextNode(text));
+      parent.insertBefore(div, nextSibling);
+      widget.domNodes.push(div);
+    } else {
+      const node = widget.document.createTextNode(text);
+      parent.insertBefore(node, nextSibling);
+      widget.domNodes.push(node);
+    }
   };
 
   exports.displayKatex = function displayKatex(widget, text, displayMode, parent, nextSibling) {

@@ -22,7 +22,7 @@ Key capabilities:
 |!Attribute |!Values |!Default |!Description |
 | `output` |`katex` · `text` |`katex` |Rendering backend — KaTeX or plain text |
 | `show` |`result` · `formula` · `full` |`result` |What to display |
-| `mode` |`inline` · `block` |`inline` |KaTeX display mode |
+| `mode` |`inline` · `block` |`inline` |KaTeX/plain text display mode |
 | `locale` |`en` · `en-US` · `fr` · `fr-FR` · BCP-47 |`en` |Output number format (separators, decimal symbol) |
 | `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
 | `precision` |positive integer |6 |Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
@@ -52,15 +52,15 @@ Key capabilities:
 !!! `mode` attribute
 
 ;`mode="inline"` (default)
-:KaTeX renders inline with surrounding text.
+:KaTeX or plain text renders inline with surrounding text.
 
 ;`mode="block"`
-:KaTeX renders as a centred display-mode formula (larger, on its own line).
+:KaTeX or plain text renders as a centred display-mode formula (larger, on its own line).
 
 !!! `notation` attribute
 
 |!Value |!Behaviour |!Default `precision` |
-| `auto` |decimal for most values; scientific for |x| < 1e-6 or |x| > 1e12 |6 |
+| `auto` |decimal for most values; scientific for │x│ < 1e-6 or │x│ > 1e12 |6 |
 | `fixed` |always decimal |6 |
 | `scientific` |always scientific: `1.234 × 10³` |6 |
 | `engineering` |exponent always a multiple of 3 |6 |

@@ -24,23 +24,32 @@ evaluation with:
 
 ## Features
 
-### EN/international input
-
-Accepts EN notation — decimal point, thousands separator (space or comma), scientific:
-
-| Input | Interpretation |
-|---|---|
-| `1.2 + 3.4` | decimal point |
-| `1 000 000 / 3` | thousands space |
-| `1,000,000 / 3` | thousands comma (EN style) |
-| `5e9` · `1.5e-3` | scientific notation |
-
 ### Math.js engine
 
 - arithmetic and algebra
 - functions: `sin`, `cos`, `sqrt`, `log`, `factorial`, `gcd`, and [all others](https://mathjs.org/docs/reference/functions.html)
 - units with auto-simplification and explicit `to` conversion
 - complex numbers (`2 + 3i`, `sqrt(-1)` → displayed normally)
+
+### Unicode operators and symbols
+
+| Symbol | Meaning | Normalised to |
+|---|---|---|
+| `×` (U+00D7) | multiplication | `*` |
+| `·` (U+00B7) | middle dot | `*` |
+| `÷` (U+00F7) | division | `/` |
+| `−` (U+2212) | minus sign | `-` |
+| `–` (U+2013) | en dash | `-` |
+| `°` (U+00B0) | degree | ` deg` |
+| `√x` | square root | `sqrt(x)` |
+| `∛x` | cube root | `cbrt(x)` |
+| `π` | pi | `pi` |
+| `τ` | tau = 2π | `(2*pi)` |
+| `∞` | infinity | `Infinity` |
+| `ℯ` (U+212F) | Euler's number | `e` |
+| `‐` (U+2010) | hyphen | `-` |
+| `x⁰`–`x⁹` | superscript digits (0–9) | `x^0`–`x^9` |
+| `½` `¼` `¾` … | vulgar fractions (½ ⅓ ⅔ ¼ ¾ ⅕–⅘ ⅙ ⅚ ⅛–⅞) | `(1/2)` etc. |
 
 ### Notation modes
 
@@ -53,7 +62,7 @@ Accepts EN notation — decimal point, thousands separator (space or comma), sci
 
 | Value | Behaviour |
 |---|---|
-| `auto` (default) | decimal; scientific for \|x\| < 1e-6 or \|x\| > 1e12 |
+| `auto` (default) | decimal; scientific for \|x\| < 1e-3 or \|x\| ≥ 1e4 (ISO 80000-1: > 4 significant figures) |
 | `fixed` | always decimal |
 | `scientific` | always scientific |
 | `engineering` | exponent always multiple of 3 |
@@ -63,11 +72,15 @@ Accepts EN notation — decimal point, thousands separator (space or comma), sci
 
 ### Locale-aware output
 
-When `locale="fr-FR"`:
+All locales use **NNBSP (U+202F, narrow no-break space)** as thousands separator
+per ISO 80000-1.  Only the decimal separator changes:
 
-- decimal comma: `3,14`
-- thin non-breaking space as thousands separator: `1 234 567`
-- scientific style: `1,234 × 10^7`
+| Locale | Decimal | Thousands | Example |
+|---|---|---|---|
+| `en` / `en-US` (default) | `.` | NNBSP | `1 234 567.89` |
+| `fr` / `fr-FR` | `,` | NNBSP | `1 234 567,89` |
+
+Scientific notation exponents use Unicode superscripts: `1.23 × 10⁻⁶` (not `10^-6`).
 
 ### Formula rendering
 
@@ -81,6 +94,7 @@ KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable
 | `pi * r^2` | `\pi\cdot r^{2}` | `π·r²` |
 | `factorial(n)` | `n!` | `n!` |
 | `log10(x)` | `\log_{10}\left(x\right)` | `log₁₀(x)` |
+| `pi * 1000000` | KaTeX | `π · 1 000 000` |
 
 ```
 <$calc show="formula">(a+b)/c</$calc>
@@ -91,19 +105,19 @@ KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable
 > When `show="formula"`, the expression is not evaluated — `notation`,
 > `precision`, `calcPrec`, and `scope` are ignored.
 
+> When the body is a **plain numeric literal** (e.g. `42`, `-3.14`),
+> `show="formula"` and `show="full"` automatically degrade to `show="result"`
+> (the formula is the value itself — there is nothing distinct to show).
+
 ### Performance
 
 - LRU cache (500 entries) — identical expressions across refresh cycles cost nothing
 - targeted cache invalidation when a referenced tiddler changes
-- lazy DOM evaluation — skips re-render when output is unchanged
+- early-exit in render — skips re-render when the expression text is unchanged
 
 ### Static validation
 
-Before any evaluation:
-
-- unbalanced parentheses detected with exact position
-- unknown identifier detected with Levenshtein "did you mean?" suggestion
-- error messages delayed 200 ms to suppress flicker while typing
+Before any evaluation, unknown identifiers are caught with a Levenshtein "did you mean?" suggestion (e.g. `sqt` → `did you mean "sqrt"?`). Syntax errors from mathjs are reformatted with position context (`Syntax error at position 4, near ")"`). All error messages are delayed 200 ms to suppress flicker while typing.
 
 ---
 
@@ -112,11 +126,11 @@ Before any evaluation:
 | Attribute | Values | Default | Description |
 |---|---|---|---|
 | `output` | `katex` · `text` | `katex` | Rendering backend — KaTeX or plain text |
-| `show` | `result` · `formula` · `full` | `result` | What to display |
-| `mode` | `inline` · `block` | `inline` | KaTeX display mode |
-| `locale` | `en` · `en-US` · `fr` · `fr-FR` · BCP-47 | `en` | Output number format (separators, decimal symbol) |
+| `show` | `result` · `formula` · `full` | `result` | What to display. `formula`/`full` degrade to `result` when the body is a plain literal. |
+| `mode` | `inline` · `block` | `inline` | Display mode. KaTeX: render mode. `output="text"`: centres result in a block `<div>`. |
+| `locale` | `en` · `en-US` · `fr` · `fr-FR` · BCP-47 | `en` | Output number format. All locales use NNBSP as thousands separator; decimal varies. |
 | `notation` | `auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` | `auto` | Numeric output notation |
-| `precision` | positive integer | 6 | Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
+| `precision` | positive integer | 6 | Display digits — significant digits for `auto`/`scientific`/`engineering`, decimal places after the point for `fixed`; ignored for `bin`/`oct`/`hex` |
 | `calcPrec` | `float` · `64` · `128` · `256` | `float` | Arithmetic precision mode — see warning below |
 | `scope` | tiddler title or `{a:1, b:2}` | — | Variable scope injected into the expression |
 | `silence` | `yes` · `no` | `no` | Suppress expression error display |
@@ -266,9 +280,9 @@ expression.  Use unambiguous names instead: `euler`, `base`, `idx`, `imag`, etc.
 ### Default: float
 
 By default the widget uses native IEEE 754 `float64` — the standard JavaScript
-`Number` type (~16 significant digits).  The formatter caps output at 12
-decimal places, which already suppresses most float artefacts visible to
-humans:
+`Number` type (~16 significant digits).  The formatter defaults to 6 decimal
+places (`precision` default), which already suppresses most float artefacts
+visible to humans:
 
 | Expression | Raw float | Displayed (12 dec.) |
 |---|---|---|
@@ -319,7 +333,7 @@ reduces rounding errors in intermediate steps.
 
 ### Performance thresholds (benchmarked on V8/Node.js)
 
-| `precision` | µs/eval (arithmetic) | µs/eval (`sin`/`cos`) | Widgets before jank |
+| `calcPrec` | µs/eval (arithmetic) | µs/eval (`sin`/`cos`) | Widgets before jank |
 |---|---|---|---|
 | `float` | ~13 µs | ~14 µs | >1000 ✅ |
 | `64` | ~66 µs | ~925 µs | ~240 (arith.) / ~17 (trig) |
@@ -340,11 +354,11 @@ within this limit.
 
 ## Installation
 
-1. Copy the plugin folder into your TiddlyWiki plugins directory `./plugins`
-2. Enable the plugin in `tiddlywiki.info` under `nikorion/math`
-3. Reload the wiki
+1. Download `plugin.json` from the [latest release](https://github.com/nikorion/TW-Math/releases/latest)
+2. Drag and drop it into your TiddlyWiki (≥ 5.2.0)
+3. Save and reload
 
-Or drag-and-drop the packed plugin tiddler into any open wiki.
+> KaTeX (`$:/plugins/tiddlywiki/katex`) is optional — the widget falls back to plain text automatically if absent.
 
 ---
 
@@ -361,7 +375,7 @@ Or drag-and-drop the packed plugin tiddler into any open wiki.
 - Uses TiddlyWiki widget lifecycle (`render` / `refresh`)
 - No runtime dependencies beyond Math.js (KaTeX is optional)
 - Designed for single-file wikis
-- Cache key format: `["<tiddler-title>", "<calcPrec>", "<scope-attr>", "<expr>"]`
+- Cache key: `[tiddler-title, normalized-expr, calcPrec, scope-attr]`
 
 ---
 
@@ -384,6 +398,18 @@ Or drag-and-drop the packed plugin tiddler into any open wiki.
 ---
 
 ## Version history
+
+### v0.4.0 — 2026-06-15
+
+`output=text` quality pass.  All locales now use NNBSP (U+202F) as thousands
+separator (EN previously used commas — non-standard).  Scientific notation
+exponents now render as Unicode superscripts (`10⁻⁶` instead of `10^-6`).
+`show=formula` and `show=full` in text mode now group digits in large numbers
+(`1 000 000`) and respect `locale` for the decimal separator.  When the
+expression body is a plain numeric literal, `show=formula` / `show=full`
+degrade to `show=result` automatically.  `mode=block` is now honoured for
+`output=text` (previously ignored) — the result is wrapped in a centred block
+`<div>`.
 
 ### v0.3.0 — 2026-06-13
 

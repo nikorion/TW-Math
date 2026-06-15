@@ -90,6 +90,25 @@ module-type: library
     return best;
   }
 
+  /**
+   * Check if a token is a known unit written with wrong casing.
+   * Tries: ALL_CAPS, Title_case, then all-lowercase.
+   * Returns the correctly-cased unit name, or null.
+   */
+  function suggestUnit(token, math) {
+    if (!math.Unit?.isValuelessUnit) return null;
+    // Title_case first (Pa, Hz) — avoids UPPERCASE prefix collisions (PA = petaampere)
+    const variants = [
+      token[0].toUpperCase() + token.slice(1).toLowerCase(),
+      token.toUpperCase(),
+      token.toLowerCase(),
+    ];
+    for (const v of variants) {
+      if (v !== token && math.Unit.isValuelessUnit(v)) return v;
+    }
+    return null;
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // sanitize (exported) ✅
   // ─────────────────────────────────────────────────────────────────────
@@ -102,10 +121,12 @@ module-type: library
       if (typeof math[token] !== "undefined") continue;        // known mathjs symbol
       if (math.Unit?.isValuelessUnit(token))  continue;        // known mathjs unit
       if (token in varScope)                  continue;        // user-defined variable 👤
-      const hint = suggest(token, math);
+      const unitHint = suggestUnit(token, math);
+      const hint     = unitHint ? null : suggest(token, math);
       throw new Error(
         `Unknown function or constant: "${token}"` +
-        (hint ? ` — did you mean "${hint}"?` : "")
+        (unitHint ? ` — unit names are case-sensitive, did you mean "${unitHint}"?`
+                  : hint ? ` — did you mean "${hint}"?` : "")
       );
     }
 

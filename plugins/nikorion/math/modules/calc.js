@@ -23,13 +23,19 @@ module-type: widget
  *                         "formula"  display the expression without evaluating.
  *                                    output="katex": via toTex() → KaTeX.
  *                                    output="text":  pretty-printed plain text
- *                                    (π, ·, superscripts, √, ∛, !, log₂…).
+ *                                    (π, ·, superscripts √, ∛, !, log₂…).
+ *                                    Numbers with 4+ digits get NNBSP (U+202F)
+ *                                    as thousands separator; decimal follows locale.
  *                         "full"     formula = result.
+ *                         ⚠️ When the body is a plain numeric literal (e.g. "42"),
+ *                            show="formula" and show="full" degrade to show="result"
+ *                            (the formula IS the value — there is nothing to show).
  *
- *   mode       {string}   KaTeX display mode — ignored when output="text".
- *                         Default: "inline".
+ *   mode       {string}   Display mode.  Default: "inline".
  *                         "inline"   rendered inline with surrounding text.
  *                         "block"    centred display-mode formula (larger).
+ *                         For output="katex": KaTeX display mode.
+ *                         For output="text":  result wrapped in a centred <div>.
  *
  *   locale     {string}   Output locale for number formatting.
  *                         Controls decimal separator, thousands separator,
@@ -37,6 +43,8 @@ module-type: widget
  *                         Short aliases:  "en" → "en-US" (default)
  *                                         "fr" → "fr-FR"
  *                         Any valid BCP-47 tag also works: "de-DE", etc.
+ *                         All locales use NNBSP (U+202F) as thousands separator
+ *                         per ISO 80000-1; only the decimal separator varies.
  *
  *   notation   {string}   Output notation mode.  Default: "auto".
  *                         "auto"        scientific for |x|<1e-6 or |x|>1e12.
@@ -103,8 +111,8 @@ module-type: widget
  * ── Pipelines ────────────────────────────────────────────────────────
  *   output="text"
  *     show="result"  normalize → scope → sanitize → cache → evaluate → check → format
- *     show="formula" normalize → prettyprint
- *     show="full"    normalize → prettyprint + " = " + format
+ *     show="formula" normalize → prettyprint(locale)   [or "result" if body is a literal]
+ *     show="full"    normalize → prettyprint + " = " + format   [or "result" if literal]
  *
  *   output="katex"
  *     show="result"  normalize → scope → sanitize → cache → evaluate → check → formatResultKatex
@@ -132,6 +140,29 @@ module-type: widget
   const errors       = require("$:/plugins/nikorion/math/modules/errors.js");
 
   const ERROR_DELAY = 200; // ms ⏱️
+
+  // ─────────────────────────────────────────────────────────────────────
+  // isLiteralValue — true when the expression is a bare numeric constant.
+  // Used to suppress show="formula"/"full" when there is nothing to "show"
+  // (formula = the value itself, so formula/full modes are redundant).
+  // Handles positive and negative literals (unary-minus ConstantNode).
+  // ─────────────────────────────────────────────────────────────────────
+  function isLiteralValue(normalized, math) {
+    try {
+      var tree = math.parse(normalized.trim());
+      // Plain numeric constant: 42, 3.14
+      if (tree.type === "ConstantNode") return true;
+      // Negated constant: -3.14
+      if (tree.type === "OperatorNode" && tree.op === "-" &&
+          tree.args.length === 1 && tree.args[0].type === "ConstantNode") return true;
+      // Number+unit literal: 1000 kg, 3.14 m (implicit multiply of constant × symbol)
+      if (tree.type === "OperatorNode" && tree.op === "*" &&
+          tree.implicit === true && tree.args.length === 2 &&
+          tree.args[0].type === "ConstantNode" &&
+          tree.args[1].type === "SymbolNode") return true;
+      return false;
+    } catch (_) { return false; }
+  }
 
   // ─────────────────────────────────────────────────────────────────────
   // Constructor
@@ -204,11 +235,11 @@ module-type: widget
 
     if (outcome.ok) {
       this._cancelErrorTimer();
+      const isBlock = this.getAttribute("mode", "inline") === "block";
       if (outcome.useKatex) {
-        const isBlock = this.getAttribute("mode", "inline") === "block";
         renderer.displayKatex(this, outcome.tex, isBlock, parent, nextSibling);
       } else {
-        renderer.displayText(this, outcome.text, parent, nextSibling);
+        renderer.displayText(this, outcome.text, parent, nextSibling, isBlock);
       }
       return;
     }
@@ -260,26 +291,34 @@ module-type: widget
     try {
       const normalized = normalize.normalize(expr);                               // 1. normalize
 
+      // When the expression is a bare numeric literal (e.g. "42", "-3.14"),
+      // show="formula" and show="full" are semantically identical to show="result"
+      // (the formula IS the value), so we degrade them silently.
+      const effectiveShow = (isLiteralValue(normalized, math) && show !== "result")
+        ? "result" : show;
+
       // ── text mode: formula/full use prettyprint, no evaluate needed ──
-      if (!useKatex && show === "formula") {
-        return { ok: true, useKatex: false, text: prettyprint.prettyprint(normalized) };
+      if (!useKatex && effectiveShow === "formula") {
+        return { ok: true, useKatex: false, text: prettyprint.prettyprint(normalized, locale) };
       }
 
       // ── katex formula pipeline ─────────────────────────────────────
-      const formulaTex = (useKatex && (show === "formula" || show === "full"))
+      const formulaTex = (useKatex && (effectiveShow === "formula" || effectiveShow === "full"))
         ? format.formatKatexFR(math.parse(normalized).toTex(), locale)
         : null;
 
-      if (useKatex && show === "formula") return { ok: true, useKatex: true, tex: formulaTex };
+      if (useKatex && effectiveShow === "formula") return { ok: true, useKatex: true, tex: formulaTex };
 
       // ── result pipeline (shared by text and katex) ─────────────────
-      const notation  = this.getAttribute("notation",  "auto");
+      const notation       = this.getAttribute("notation",  "auto");
       // Validate display precision: parseInt("") / parseInt("abc") → NaN →
       // notation default; otherwise clamped to safe Intl/toExponential
       // bounds (0/1–100).  Prevents raw RangeErrors leaking to the user.
-      const precision = format.clampPrecision(
-        parseInt(this.getAttribute("precision", ""), 10), notation
-      );
+      const precisionRaw      = this.getAttribute("precision", "");
+      const precision         = format.clampPrecision(parseInt(precisionRaw, 10), notation);
+      // Track whether the user explicitly set precision: only then do we
+      // keep trailing zeros (ISO 80000-1 — zeros signal known accuracy).
+      const precisionExplicit = precisionRaw !== "";
       const tid       = this.getVariable("currentTiddler");
 
       const scopeAttr = this.getAttribute("scope", "");
@@ -307,13 +346,13 @@ module-type: widget
       }
 
       if (useKatex) {
-        const resultTex = format.formatResultKatex(result, locale, { notation, precision }); // 7a. format katex
-        if (show === "full") return { ok: true, useKatex: true, tex: `${formulaTex} = ${resultTex}` };
+        const resultTex = format.formatResultKatex(result, locale, { notation, precision, precisionExplicit }); // 7a. format katex
+        if (effectiveShow === "full") return { ok: true, useKatex: true, tex: `${formulaTex} = ${resultTex}` };
         return { ok: true, useKatex: true, tex: resultTex };
       } else {
-        const resultText   = format.format(result, locale, { notation, precision }); // 7b. format text
-        const formulaText  = prettyprint.prettyprint(normalized);                    // 7b. prettyprint
-        if (show === "full") return { ok: true, useKatex: false, text: `${formulaText} = ${resultText}` };
+        const resultText  = format.format(result, locale, { notation, precision, precisionExplicit }); // 7b. format text
+        const formulaText = prettyprint.prettyprint(normalized, locale);             // 7b. prettyprint
+        if (effectiveShow === "full") return { ok: true, useKatex: false, text: `${formulaText} = ${resultText}` };
         return { ok: true, useKatex: false, text: resultText };
       }
 
