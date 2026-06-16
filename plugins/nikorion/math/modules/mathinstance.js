@@ -35,7 +35,7 @@ module-type: library
 (function () {
   "use strict";
 
-  const math = require("$:/plugins/nikorion/math/modules/math.js");
+  const math = require("$:/plugins/nikorion/math/modules/math.min.js");
 
   const VALID_PRECISIONS  = ["float", "64", "128", "256"];
   const DEFAULT_PRECISION = "float";

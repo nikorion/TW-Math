@@ -1,7 +1,7 @@
 {
   "title": "$:/plugins/nikorion/math",
-  "name": "Math.js",
-  "description": "Lightweight TiddlyWiki widget integrating Math.js",
+  "name": "Math",
+  "description": "Widget integrating Math.js",
   "author": "nikorion",
   "source": "https://github.com/nikorion/TW-Math",
   "list": "readme license history examples cheatsheet test tree",

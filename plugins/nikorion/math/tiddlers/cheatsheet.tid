@@ -9,7 +9,7 @@ type: text/vnd.tiddlywiki
 | `output` |`katex` · `text` |`katex` |Rendering backend |
 | `show` |`result` · `formula` · `full` |`result` |What to display. `formula`/`full` degrade to `result` when body is a plain literal. |
 | `mode` |`inline` · `block` |`inline` |Display mode. Katex: render mode. `output="text"`: centres result in a block `<div>`. |
-| `locale` |`en` · `en-US` · `fr` · `fr-FR` · BCP-47 |`en` |Output number format. All locales use NNBSP (U+202F) as thousands separator. |
+| `decimal` |`point` · `comma` |`point` |Decimal separator. Thousands separator is always NNBSP (U+202F). |
 | `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
 | `precision` |positive integer |6 |Display digits (decimal places or significant digits); ignored for bin/oct/hex |
 | `calcPrec` |`float` · `64` · `128` · `256` |`float` |Arithmetic precision mode ⚠️ |
@@ -26,8 +26,8 @@ type: text/vnd.tiddlywiki
 * `full` — `formula = result`. Same demotion applies.
 
 ;`notation` values:
-* `auto` / `fixed` / `scientific` / `engineering` — locale-aware decimal output; `precision` controls digits
-* `bin` · `oct` · `hex` — integer-base output; locale and precision are ignored
+* `auto` / `fixed` / `scientific` / `engineering` — decimal output; `precision` controls digits
+* `bin` · `oct` · `hex` — integer-base output; `decimal` and `precision` are ignored
 
 ;`precision` semantics by notation:
 * `auto` · `scientific` · `engineering` → significant digits (default 6) — ISO 80000-1
@@ -156,7 +156,7 @@ KaTeX by default when the plugin is installed; pretty-printed plain text otherwi
 * `sqrt(…)` → `√(…)`   `cbrt(…)` → `∛(…)`
 * `factorial(n)` → `n!`
 * `log10(x)` → `log₁₀(x)`   `log2(x)` → `log₂(x)`
-* Numbers with 4+ digits get NNBSP as thousands separator: `1000000` → `1 000 000`; decimal separator follows `locale`.
+* Numbers with 4+ digits get NNBSP as thousands separator: `1000000` → `1 000 000`; decimal separator follows the `decimal` attribute.
 * Scientific exponents use Unicode superscripts: `10⁻⁶` not `10^-6`.
 
 ⚠️ `show="formula"` does not evaluate — `notation`, `precision`, `calcPrec`, and `scope` are ignored.

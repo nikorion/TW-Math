@@ -4,7 +4,7 @@ import globals from "globals";
 export default [
   {
     ignores: [
-      "plugins/nikorion/math/modules/math.js",
+      "plugins/nikorion/math/modules/math.min.js",
       "node_modules/**",
       "dist/**",
       "docs/**",

@@ -20,10 +20,8 @@ module-type: library
  *       h: 10
  *       area: pi * r^2
  *
- *     Each value expression is passed through normalize() then sanitize()
- *     before being evaluated by mathjs.  Errors include the variable name
- *     and the stage that failed, e.g.:
- *       scope["r"]: Unknown function or constant: "sqt" — did you mean "sqrt"?
+ *     Each value expression is passed through normalize()
+ *     before being evaluated by mathjs.  Errors include the variable name.
  *
  *     One variable per line (avoids ambiguity with commas inside expressions
  *     like max(1, 2) or [1, 2, 3]).  Later lines may reference earlier ones.
@@ -76,7 +74,7 @@ module-type: library
  * in the scope silently shadows those constants.  Use unambiguous names.
  *
  * Exported:
- *   buildScope(scopeAttr, wiki, math, normalizeModule, sanitizeModule)
+ *   buildScope(scopeAttr, wiki, math, normalizeModule)
  *     → scope object (may be {})
  */
 
@@ -84,7 +82,7 @@ module-type: library
   "use strict";
 
   // ── Tiddler mode ──────────────────────────────────────────────────────
-  function parseTiddlerScope(text, math, normalizeModule, sanitizeModule) {
+  function parseTiddlerScope(text, math, normalizeModule) {
     const scope = {};
 
     for (const rawLine of text.split("\n")) {
@@ -98,16 +96,9 @@ module-type: library
       if (!name || !value) continue;
 
       try {
-        // Normalize: converts locale separators, unicode operators, etc.
         const normalized = normalizeModule.normalize(value);
-
-        // Sanitize: catches structural errors and unknown identifiers.
-        // Pass the partially-built scope so earlier variables are recognised.
-        sanitizeModule.sanitize(normalized, math, scope);
-
         scope[name] = math.evaluate(normalized, scope);
       } catch (e) {
-        // Prefix the error with the variable name and source line for clarity.
         throw new Error(`scope["${name}"]: ${e.message}`);
       }
     }
@@ -164,7 +155,7 @@ module-type: library
    *
    * Returns the rewritten string, or throws with a key-prefixed message.
    */
-  function normalizeInlineNumbers(raw, normalizeModule, _sanitizeModule, _math) {
+  function normalizeInlineNumbers(raw, normalizeModule, _math) {
     // Replace each  key: value  pair.  We only attempt normalisation on
     // values that consist purely of number-like characters (digits, spaces,
     // commas, dots, +, -, e/E for scientific notation).
@@ -194,7 +185,7 @@ module-type: library
   }
 
   // ── Inline mode ───────────────────────────────────────────────────────
-  function parseInlineScope(raw, math, normalizeModule, sanitizeModule) {
+  function parseInlineScope(raw, math, normalizeModule) {
     let s = raw.trim();
 
     // Auto-wrap missing outer braces.
@@ -202,7 +193,7 @@ module-type: library
     if (!s.endsWith("}"))   s = s + "}";
 
     // Normalize plain number literals (thousands spaces).
-    s = normalizeInlineNumbers(s, normalizeModule, sanitizeModule, math);
+    s = normalizeInlineNumbers(s, normalizeModule, math);
 
     // Legacy math.* prefix → bare mathjs function names.
     s = stripMathPrefix(s);
@@ -239,7 +230,7 @@ module-type: library
   // ─────────────────────────────────────────────────────────────────────
   // buildScope (exported) 🚀
   // ─────────────────────────────────────────────────────────────────────
-  exports.buildScope = function buildScope(scopeAttr, wiki, math, normalizeModule, sanitizeModule) {
+  exports.buildScope = function buildScope(scopeAttr, wiki, math, normalizeModule) {
     if (!scopeAttr) return {};
 
     // Mode 1: tiddler exists → parse line by line.
@@ -247,12 +238,12 @@ module-type: library
     if (tiddler) {
       const text = tiddler.fields.text ?? "";
       return text.trim()
-        ? parseTiddlerScope(text, math, normalizeModule, sanitizeModule)
+        ? parseTiddlerScope(text, math, normalizeModule)
         : {};
     }
 
     // Mode 2: no tiddler → treat as inline JS-object literal.
-    return parseInlineScope(scopeAttr, math, normalizeModule, sanitizeModule);
+    return parseInlineScope(scopeAttr, math, normalizeModule);
   };
 
 })();

@@ -17,7 +17,7 @@ module-type: library
  * ── Transformations applied ───────────────────────────────────────────
  *
  *  0. Number grouping  integers/decimals with 4+ digits get NNBSP (U+202F)
- *                      as thousands separator; decimal separator follows locale.
+ *                      as thousands separator; decimal separator follows the `decimal` attribute.
  *  0.7 Sci. notation  1.2e70 → 1.2 × 10⁷⁰   (ISO 80000-1 × for powers of 10)
  *  1. Constants        pi → π   tau → τ   Infinity → ∞   e (lone) → ℯ
  *  2. Functions        sqrt(…) → √(…)   cbrt(…) → ∛(…)
@@ -40,7 +40,7 @@ module-type: library
  *
  * Exported:
  *   prettyprint(normalizedExpr, locale) → string
- *     locale: BCP-47 tag or alias ("fr"/"fr-FR" for French decimal comma).
+ *     locale: internal BCP-47 tag derived from the `decimal` widget attribute.
  *             Optional — defaults to EN style (decimal point).
  */
 
@@ -94,7 +94,7 @@ module-type: library
   // prettyprint (exported) 🖋️
   // ─────────────────────────────────────────────────────────────────────
   exports.prettyprint = function prettyprint(expr, locale) {
-    var isFR = locale === "fr" || locale === "fr-FR";
+    var isFR = locale === "fr-FR";
     var s = expr;
 
     // ── 0. Number grouping: NNBSP thousands on literals with 4+ digits ──

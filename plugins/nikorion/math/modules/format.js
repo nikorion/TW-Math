@@ -7,7 +7,7 @@ module-type: library
 /*
  * format.js — result formatting 🎨
  *
- * Converts a mathjs evaluation result into a locale-aware display string,
+ * Converts a mathjs evaluation result into a formatted display string,
  * and provides utilities to convert results and formulas into KaTeX-ready
  * LaTeX strings.
  *
@@ -17,7 +17,7 @@ module-type: library
  *
  * ── Notation modes ────────────────────────────────────────────────────
  *
- * Decimal / scientific family — locale-aware, precision-controlled:
+ * Decimal / scientific family — decimal-separator-aware, precision-controlled:
  *
  *   "auto"        Widget decides: scientific for |x| < 1e-3 or |x| >= 1e4 (> 4 sig. figs.),
  *                 decimal otherwise (ISO 80000-1).  Precision = significant digits (default 6).
@@ -33,14 +33,14 @@ module-type: library
  *   "engineering" Engineering notation (exponent multiple of 3).
  *                 Precision = significant digits (default 6).
  *
- * Integer-base family — locale-ignored, precision-ignored:
+ * Integer-base family — decimal-ignored, precision-ignored:
  *
  *   "bin"         Binary, prefixed "0b".   Example: 42 → "0b101010"
  *   "oct"         Octal,  prefixed "0o".   Example: 42 → "0o52"
  *   "hex"         Hexadecimal, prefixed "0x".  Example: 255 → "0xff"
  *
  *   Rules for bin/oct/hex:
- *   • locale and precision attributes are ignored.
+ *   • decimal and precision attributes are ignored.
  *   • BigNumber results are converted via toNumber() before formatting.
  *   • Non-integer values are truncated silently by math.js (3.7 → 3 in bin).
  *   • Negative values are accepted: -42 → "-0b101010".
@@ -91,7 +91,7 @@ module-type: library
 (function () {
   "use strict";
 
-  const math = require("$:/plugins/nikorion/math/modules/math.js");
+  const math = require("$:/plugins/nikorion/math/modules/math.min.js");
 
   const NNBSP = " "; // NARROW NO-BREAK SPACE (U+202F) — ISO 80000-1 thin space around ×
 
@@ -100,6 +100,11 @@ module-type: library
                 "4": "⁴", "5": "⁵", "6": "⁶",
                 "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻" };
   function toSup(str) { return String(str).split("").map(function(c) { return SUP[c] || c; }).join(""); }
+
+  // True for any locale that uses comma as decimal separator (fr-FR, de-DE, es-ES…).
+  function isCommaDecimal(locale) {
+    return new Intl.NumberFormat(locale).format(1.1).includes(",");
+  }
 
   // Remove trailing zeros (and trailing dot) from a mantissa string.
   // Only used when precision is not explicitly set by the user.
@@ -110,7 +115,7 @@ module-type: library
   }
 
   // ── Integer-base notation set ─────────────────────────────────────────
-  // bin/oct/hex bypass locale, precision, and Intl formatting entirely.
+  // bin/oct/hex bypass the decimal setting, precision, and Intl formatting entirely.
   const BASE_NOTATIONS = new Set(["bin", "oct", "hex"]);
 
   // ── Default precision per notation mode ───────────────────────────────
@@ -128,7 +133,6 @@ module-type: library
 
   exports.BASE_NOTATIONS    = BASE_NOTATIONS;
   exports.NOTATION_DEFAULTS = NOTATION_DEFAULTS;
-  exports.LOCALE_ALIASES    = { en: "en-US", fr: "fr-FR" };
 
   // Clamp display precision to safe bounds. 🛡️
   //   • bin/oct/hex → precision is unused; return undefined (caller ignores it).
@@ -175,7 +179,7 @@ module-type: library
     return math.format(Math.trunc(num), { notation });
   }
 
-  // Intl.NumberFormat wrapper — locale-aware grouping and decimal. 🌐
+  // Intl.NumberFormat wrapper — grouping and decimal separator. 🌐
   // Replaces any space with narrow no-break space (U+202F) per ISO 80000.
   // Used by notation="fixed": precision = decimal places after the point.
   function intlFormat(num, locale, fractionDigits) {
@@ -221,26 +225,27 @@ module-type: library
   // Format a plain number to a plain string (text fallback). 🔢
   function formatNumber(num, locale, notation, precision, precisionExplicit) {
     const abs = Math.abs(num);
+    const isFR = isCommaDecimal(locale);
     function clean(m) { return precisionExplicit ? m : stripTrailingZerosMantissa(m); }
 
     switch (notation) {
       case "scientific": {
         const raw = num.toExponential(precision - 1); // "1.4140e-6"
         const { mantissa, exp } = splitSci(raw);
-        return sciStr(clean(mantissa), exp, locale === "fr-FR");
+        return sciStr(clean(mantissa), exp, isFR);
       }
 
       case "engineering": {
         const raw = engineeringRaw(num, precision);
         const { mantissa, exp } = splitSci(raw);
-        return sciStr(clean(mantissa), exp, locale === "fr-FR");
+        return sciStr(clean(mantissa), exp, isFR);
       }
 
       case "auto":
         if (num !== 0 && (abs < 1e-3 || abs >= 1e4)) {
           const raw = num.toExponential(precision - 1);
           const { mantissa, exp } = splitSci(raw);
-          return sciStr(clean(mantissa), exp, locale === "fr-FR");
+          return sciStr(clean(mantissa), exp, isFR);
         }
         return intlFormatSigFigs(num, locale, precision, precisionExplicit);
 
@@ -327,7 +332,7 @@ module-type: library
     const notation          = options.notation          ?? "auto";
     const precisionExplicit = options.precisionExplicit ?? false;
 
-    // ── Integer-base modes: locale and precision are bypassed entirely ──
+    // ── Integer-base modes: decimal and precision are bypassed entirely ──
     if (BASE_NOTATIONS.has(notation)) return formatBase(result, notation);
 
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
@@ -360,7 +365,7 @@ module-type: library
     const notation          = options.notation          ?? "auto";
     const precisionExplicit = options.precisionExplicit ?? false;
 
-    // ── Integer-base modes: locale and precision are bypassed entirely ──
+    // ── Integer-base modes: decimal and precision are bypassed entirely ──
     // formatBase throws a descriptive Error for Unit results.
     // \texttt{} gives monospace rendering (prefix "0b"/"0o"/"0x" reads better).
     if (BASE_NOTATIONS.has(notation)) {
@@ -397,7 +402,7 @@ module-type: library
   // Format a plain number to a KaTeX-ready LaTeX string. 🔬
   // Same notation rules as formatNumber, but LaTeX output.
   function numberToKatex(num, locale, notation, precision, precisionExplicit) {
-    const isFR = locale === "fr-FR";
+    const isFR = isCommaDecimal(locale);
     const abs  = Math.abs(num);
     const useSci = notation === "scientific"
                 || notation === "engineering"
@@ -425,7 +430,7 @@ module-type: library
   // Convert a formatted decimal string to LaTeX. 🔄
   //   EN "1 414.5"  → "1\,414.5"      (NNBSP = thousands sep → \,)
   //   FR "1 414,5"  → "1\,414{,}5"    (NNBSP = thousands, comma = decimal)
-  // Both locales now produce NNBSP for grouping (intlFormat uses formatToParts).
+  // Both modes produce NNBSP for grouping (intlFormat uses formatToParts).
   function numericToKatex(plain, isFR) {
     if (isFR) {
       // Decimal comma FIRST: the "\," inserted for thousands spaces
@@ -450,7 +455,7 @@ module-type: library
   //   FR decimal point → {,}:   3.14   →  3{,}14   (no extra KaTeX comma spacing)
   //   Thousands grouping:        1000   →  1\,000   (all locales, ISO 80000-1)
   exports.formatKatexFR = function formatKatexFR(tex, locale) {
-    const isFR = locale === "fr" || locale === "fr-FR";
+    const isFR = isCommaDecimal(locale);
     let s = tex;
 
     // Step 0: scientific notation — math.js toTex() converts large/small numbers

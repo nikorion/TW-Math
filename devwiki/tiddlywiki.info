@@ -3,9 +3,9 @@
   "plugins": [
     "tiddlywiki/filesystem",
     "tiddlywiki/tiddlyweb",
-    "nikorion/math",
     "tiddlywiki/katex",
-    "tiddlywiki/highlight"
+    "tiddlywiki/highlight",
+    "nikorion/math"
   ],
   "themes": [
     "tiddlywiki/vanilla"

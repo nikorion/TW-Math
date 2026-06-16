@@ -39,7 +39,7 @@ module-type: library
     // removeChildDomNodes() here: in TiddlyWiki that delegates to destroy(),
     // which wipes widget.children — i.e. the body widgets used to compute the
     // expression.  Without them, refreshChildren() can no longer detect edits
-    // and the result stays frozen after the first character.  See calc.js
+    // and the result stays frozen after the first character.  See calc.widget.js
     // refresh(). 🧊
     for (const node of widget.domNodes) {
       if (node.parentNode) node.parentNode.removeChild(node);

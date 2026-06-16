@@ -15,14 +15,14 @@ type: text/vnd.tiddlywiki
 | `π * 2` (π unicode) | <$calc>π * 2</$calc> |
 | `τ / 2` (τ = 2π) | <$calc>τ / 2</$calc> |
 
-!! Locale output (EN vs FR)
+!! Decimal separator
 
-All locales use NNBSP (U+202F, narrow no-break space) as thousands separator per ISO 80000-1.
+NNBSP (U+202F, narrow no-break space) is always used as thousands separator per ISO 80000-1.
 Only the decimal separator varies.  Scientific exponents render as Unicode superscripts.
 
-| Expression | `locale="en"` (default) | `locale="fr"` |h
-| `123456.789` (''`notation="fixed"`'') | <$calc notation="fixed">123456.789</$calc> | <$calc notation="fixed" locale="fr">123456.789</$calc> |
-| `123456.789` (''`notation="scientific"`'') | <$calc notation="scientific">123456.789</$calc> | <$calc notation="scientific" locale="fr">123456.789</$calc> |
+| Expression | `decimal="point"` (default) | `decimal="comma"` |h
+| `123456.789` (''`notation="fixed"`'') | <$calc notation="fixed">123456.789</$calc> | <$calc notation="fixed" decimal="comma">123456.789</$calc> |
+| `123456.789` (''`notation="scientific"`'') | <$calc notation="scientific">123456.789</$calc> | <$calc notation="scientific" decimal="comma">123456.789</$calc> |
 
 !! Notation modes
 
@@ -36,7 +36,7 @@ Only the decimal separator varies.  Scientific exponents render as Unicode super
 | Expression | `notation="bin"` | `notation="oct"` | `notation="hex"` |h
 | `42` | <$calc notation="bin">42</$calc> | <$calc notation="oct">42</$calc> | <$calc notation="hex">42</$calc> |
 
-⚠️ bin/oct/hex: `locale` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Negative values are accepted.
+⚠️ bin/oct/hex: `decimal` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Negative values are accepted.
 
 !! Formula rendering
 

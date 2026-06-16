@@ -12,7 +12,7 @@ Expect breaking changes, unstable behavior, and ongoing API adjustments.
 A lightweight TiddlyWiki widget integrating Math.js for inline expression
 evaluation with:
 
-- locale-aware output formatting (EN/FR/any BCP-47)
+- configurable decimal separator (`point` or `comma`)
 - input in EN notation: decimal point, thousands separators (space or EN comma), scientific notation
 - configurable numeric precision (float or BigNumber)
 - unit-aware output with automatic simplification
@@ -70,15 +70,15 @@ evaluation with:
 | `oct` | octal, prefixed `0o` |
 | `hex` | hexadecimal, prefixed `0x` |
 
-### Locale-aware output
+### Decimal separator
 
-All locales use **NNBSP (U+202F, narrow no-break space)** as thousands separator
+**NNBSP (U+202F, narrow no-break space)** is always used as thousands separator
 per ISO 80000-1.  Only the decimal separator changes:
 
-| Locale | Decimal | Thousands | Example |
-|---|---|---|---|
-| `en` / `en-US` (default) | `.` | NNBSP | `1 234 567.89` |
-| `fr` / `fr-FR` | `,` | NNBSP | `1 234 567,89` |
+| `decimal` | Decimal | Example |
+|---|---|---|
+| `point` (default) | `.` | `1 234 567.89` |
+| `comma` | `,` | `1 234 567,89` |
 
 Scientific notation exponents use Unicode superscripts: `1.23 × 10⁻⁶` (not `10^-6`).
 
@@ -128,7 +128,7 @@ Before any evaluation, unknown identifiers are caught with a Levenshtein "did yo
 | `output` | `katex` · `text` | `katex` | Rendering backend — KaTeX or plain text |
 | `show` | `result` · `formula` · `full` | `result` | What to display. `formula`/`full` degrade to `result` when the body is a plain literal. |
 | `mode` | `inline` · `block` | `inline` | Display mode. KaTeX: render mode. `output="text"`: centres result in a block `<div>`. |
-| `locale` | `en` · `en-US` · `fr` · `fr-FR` · BCP-47 | `en` | Output number format. All locales use NNBSP as thousands separator; decimal varies. |
+| `decimal` | `point` · `comma` | `point` | Decimal separator — `point` (1.5) or `comma` (1,5). Thousands separator is always NNBSP. |
 | `notation` | `auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` | `auto` | Numeric output notation |
 | `precision` | positive integer | 6 | Display digits — significant digits for `auto`/`scientific`/`engineering`, decimal places after the point for `fixed`; ignored for `bin`/`oct`/`hex` |
 | `calcPrec` | `float` · `64` · `128` · `256` | `float` | Arithmetic precision mode — see warning below |
@@ -162,14 +162,11 @@ error message.
 <$calc>1 + 2 * 3</$calc>
 ```
 
-### Locale
+### Decimal separator
 
 ```
-<$calc locale="fr-FR">1234567.89</$calc>
+<$calc decimal="comma">1234567.89</$calc>
 ```
-
-Short aliases: `en` → `en-US`, `fr` → `fr-FR`.  
-Any valid BCP-47 tag is accepted: `de-DE`, `ja-JP`, etc.
 
 ### Show modes
 
@@ -189,14 +186,14 @@ Any valid BCP-47 tag is accepted: `de-DE`, `ja-JP`, etc.
 
 ```
 <$calc notation="scientific">0.00000012</$calc>
-<$calc notation="engineering" locale="fr">1234567</$calc>
+<$calc notation="engineering" decimal="comma">1234567</$calc>
 <$calc notation="fixed" precision="2">3.14159</$calc>
 <$calc notation="bin">42</$calc>
 <$calc notation="oct">42</$calc>
 <$calc notation="hex">255</$calc>
 ```
 
-For `bin`, `oct`, and `hex`: `locale` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
+For `bin`, `oct`, and `hex`: `decimal` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
 
 ### Silence errors
 
@@ -401,11 +398,11 @@ within this limit.
 
 ### v0.4.0 — 2026-06-15
 
-`output=text` quality pass.  All locales now use NNBSP (U+202F) as thousands
+`output=text` quality pass.  All modes now use NNBSP (U+202F) as thousands
 separator (EN previously used commas — non-standard).  Scientific notation
 exponents now render as Unicode superscripts (`10⁻⁶` instead of `10^-6`).
 `show=formula` and `show=full` in text mode now group digits in large numbers
-(`1 000 000`) and respect `locale` for the decimal separator.  When the
+(`1 000 000`) and respect the `decimal` attribute for the decimal separator.  When the
 expression body is a plain numeric literal, `show=formula` / `show=full`
 degrade to `show=result` automatically.  `mode=block` is now honoured for
 `output=text` (previously ignored) — the result is wrapped in a centred block
@@ -447,7 +444,7 @@ from that work.
 Mathematical evaluation by [Math.js](https://github.com/josdejong/mathjs),
 created by Jos de Jong and the Math.js community.
 
-Icon from [SVG Repo](https://www.svgrepo.com/svg/228720/calculating-maths) —
+Icon from [SVG Repo](https://www.svgrepo.com/svg/260088/calculator) —
 see SVG Repo terms of use.
 
 Developed with assistance from OpenAI ChatGPT and Anthropic Claude for code

@@ -3,7 +3,7 @@ type: text/vnd.tiddlywiki
 
 \define stateTidd() $:/state/plugins/nikorion/math/test
 
-\function locale()   [<stateTidd>get[locale]else[en-US]]
+\function decimal()  [<stateTidd>get[decimal]else[point]]
 \function notation() [<stateTidd>get[notation]else[auto]]
 \function show()     [<stateTidd>get[show]else[result]]
 \function mode()     [<stateTidd>get[mode]else[inline]]
@@ -15,12 +15,12 @@ type: text/vnd.tiddlywiki
 \function expr()      [<stateTidd>get[expression]]
 
 <style>
-.locale-row {
+.calc-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.locale-row .tc-radio {
+.calc-row .tc-radio {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -32,7 +32,7 @@ type: text/vnd.tiddlywiki
 <th>Attributes</th>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `output`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="output" value="katex" default="katex">&nbsp;katex&nbsp;(default)</$radio>
@@ -40,15 +40,15 @@ type: text/vnd.tiddlywiki
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
-`locale`
+<td class="calc-row">
+`decimal`
 <$tiddler tiddler=<<stateTidd>>>
-<$radio field="locale" value="en-US" default="en-US">&nbsp;en-US&nbsp;(default)</$radio>
-<$radio field="locale" value="fr-FR">&nbsp;fr-FR</$radio>
+<$radio field="decimal" value="point" default="point">&nbsp;point&nbsp;(default)</$radio>
+<$radio field="decimal" value="comma">&nbsp;comma</$radio>
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `show`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="show" value="result" default="result">&nbsp;result&nbsp;(default)</$radio>
@@ -57,7 +57,7 @@ type: text/vnd.tiddlywiki
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `notation`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="notation" value="auto" default="auto">&nbsp;auto&nbsp;(default)</$radio>
@@ -70,14 +70,14 @@ type: text/vnd.tiddlywiki
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `precision`
 <$tiddler tiddler=<<stateTidd>>>
 <$edit-text field="precision" placeholder="default (6)" size=8/>
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `mode`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="mode" value="inline" default="inline">&nbsp;inline&nbsp;(default)</$radio>
@@ -85,7 +85,7 @@ type: text/vnd.tiddlywiki
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `calcPrec`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="calcPrec" value="float" default="float">&nbsp;float&nbsp;(default)</$radio>
@@ -95,14 +95,14 @@ type: text/vnd.tiddlywiki
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `scope`
 <$tiddler tiddler=<<stateTidd>>>
 <$edit-text field="scope" placeholder="{a: 2, b: 5}" size=24/>
 </$tiddler></td>
 </tr>
 <tr>
-<td class="locale-row">
+<td class="calc-row">
 `silence`
 <$tiddler tiddler=<<stateTidd>>>
 <$radio field="silence" value="no" default="no">&nbsp;no&nbsp;(default)</$radio>
@@ -114,5 +114,5 @@ type: text/vnd.tiddlywiki
 <$edit-text tiddler=<<stateTidd>> field="expression" placeholder="Expression" size=36/>
 <$button tooltip="restore default" class="tc-btn-invisible" actions="""<$action-deletetiddler $tiddler=<<stateTidd>>/>""">{{$:/core/images/refresh-button}}</$button>
 <$list filter="[<stateTidd>has[expression]]">
-<$calc output=<<output>> locale=<<locale>> notation=<<notation>> precision=<<precision>> show=<<show>> mode=<<mode>> calcPrec=<<calcPrec>> scope=<<scope>> silence=<<silence>>><<expr>></$calc>
+<$calc output=<<output>> decimal=<<decimal>> notation=<<notation>> precision=<<precision>> show=<<show>> mode=<<mode>> calcPrec=<<calcPrec>> scope=<<scope>> silence=<<silence>>><<expr>></$calc>
 </$list>
