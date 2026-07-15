@@ -1,13 +1,13 @@
 # TW-Math — contexte projet pour Claude
 
 ## Ce que c'est
-Plugin TiddlyWiki (`$:/plugins/nikorion/math`) qui expose un widget `<$calc>` évaluant des expressions mathématiques via **Math.js**. Rendu en texte brut ou KaTeX. Auteur : nikorion.
+Plugin TiddlyWiki (`$:/plugins/nikorion/math`) qui expose un widget `<$math>` évaluant des expressions mathématiques via **Math.js**. Rendu en texte brut ou KaTeX. Auteur : nikorion.
 
 ## Structure
 ```
-plugins/nikorion/math/      ← sources du plugin (seul dossier à toucher)
+src/math/                   ← sources du plugin (seul dossier à toucher)
   modules/
-    calc.widget.js          ← widget principal, pipeline d'évaluation
+    math.widget.js          ← widget principal, pipeline d'évaluation
     normalize.js            ← normalise la syntaxe avant évaluation
     sanitize.js             ← vérifie la sécurité de l'expression
     scope.js                ← construit le scope (variables injectées)
@@ -26,35 +26,50 @@ plugins/nikorion/math/      ← sources du plugin (seul dossier à toucher)
   plugin.info               ← métadonnées du plugin
   readme.tid / history.tid / licence.tid / tree.tid
 
-devwiki/                    ← wiki TW de développement (ne pas versionner StoryList/HistoryList)
+wiki/                       ← wiki TW de développement (ne pas versionner StoryList/HistoryList)
   tiddlywiki.info           ← config : plugins chargés, targets build plugin-json + html
-  tiddlers/                 ← tiddlers de config UI + $__dev-livereload.tid
+  tiddlers/                 ← tiddlers de config UI + system/$__dev-hmr.tid + system/$__config_SyncFilter.tid
 
 dist/                       ← généré par pnpm build, gitignored
 docs/                       ← TW-Math.html standalone (distribution)
 ```
 
+## Build html (docs/) — publishFilter
+La target `html` de `wiki/tiddlywiki.info` fait `--rendertiddler $:/core/save/all`, qui embarque **tout le store de tiddlers chargé dans wiki** (pas seulement le plugin) — thèmes, config UI, plugins tiers droppés dans `wiki/tiddlers/`, etc.
+
+Pour éviter de publier des tiddlers de dev dans `docs/TW-Math-Wiki.html`, la target passe la variable `publishFilter` (mécanisme core, le même que celui utilisé par le bouton "Download full wiki" — voir `$:/core/save/all` / `SavingMechanism`) en args supplémentaires de `--rendertiddler` :
+```json
+"--rendertiddler", "$:/core/save/all", "TW-Math-Wiki.html", "text/plain", "",
+"publishFilter", "-[[$:/dev/hmr]] -[[$:/config/dev/hmr-port]] -[[$:/config/SyncFilter]] -[[$:/plugins/wikilabs/link-to-tabs]] -[[$:/plugins/kookma/commander]] -[[$:/plugins/oeyoews/tiddlywiki-codemirror-6]]"
+```
+Le `""` avant `publishFilter` est le slot `template` (inutilisé, à laisser vide — sinon les index se décalent). Sont exclus : les tiddlers de dev du HMR (`$:/dev/hmr`, `$:/config/dev/hmr-port`, `$:/config/SyncFilter`) et les plugins tiers de confort sans rapport avec le widget math (`link-to-tabs`, `commander`, `codemirror-6` — installés dans `wiki/tiddlers/system/` par glisser-déposé pour le confort de dev). `katex`/`highlight` sont **gardés** car ils servent au rendu du plugin lui-même.
+
 ## Workflow dev
 ```
 pnpm install
 pnpm lint     # ESLint sur modules/*.js (sauf math.min.js)
-pnpm dev      # TW sur :8485 + livereload — ouvrir http://localhost:8485
-pnpm build    # génère dist/plugin.json (bundle pour TW navigateur)
+pnpm dev      # TW sur :8080 (défaut ; port libre si occupé) + HMR SSE — l'URL est affichée
+pnpm build    # génère dist/TW-Math-Plugin.json + docs/TW-Math-Wiki.html
 ```
 
-`pnpm dev` lance en parallèle :
-- **nodemon** → surveille `plugins/nikorion/math`, relance `tiddlywiki devwiki --listen port=8485` à chaque changement
-- **livereload** → surveille le même dossier, envoie le signal de rechargement au navigateur (wait 1500 ms)
+`pnpm dev` lance `scripts/dev.cjs`, orchestrateur (calqué sur TW-Hover-Tilt, zéro dépendance ajoutée) qui :
+1. résout le port TW (défaut **8080**, sinon un port libre aléatoire si 8080 est pris — ex. un autre `pnpm dev` en parallèle) et le port SSE du HMR (défaut **35730**, même logique) — « move aside » ;
+2. écrit le port SSE résolu dans le tiddler git-ignoré `$:/config/dev/hmr-port` (fichier `wiki/tiddlers/$__dev-hmr-port.tid`), lu par le client navigateur ;
+3. lance en parallèle (spawn direct, plus de `concurrently`) :
+   - **nodemon** → reboote TW **uniquement** sur changement de module JS / `plugin.info` (port injecté via `--exec` ; celui de `nodemon.json` n'est qu'un fallback standalone)
+   - **dev-hmr.cjs** (maison) → serveur SSE de **HMR de contenu** : les tiddlers `.tid`/`.multids` **et les assets** (`assets/icon.svg` et son `.meta`, tout `.css`/`.json`/image) modifiés sont poussés à chaud (override de shadow en mémoire, état préservé, pas de reload) ; seuls un module `.js` ou `plugin.info` déclenchent reboot + reload complet une fois TW prêt (sonde le port down→up)
 
-Le tiddler `$__dev-livereload.tid` dans devwiki injecte le script livereload côté navigateur.
+Le client `$:/dev/hmr` (`wiki/tiddlers/system/$__dev-hmr.tid`) ouvre l'EventSource (port lu dans `$:/config/dev/hmr-port`, fallback 35730). Le garde-fou `$:/config/SyncFilter` (`wiki/tiddlers/system/$__config_SyncFilter.tid`) exclut le préfixe du plugin du sync tiddlyweb pour que les overrides HMR ne soient jamais persistés sur disque. Principe détaillé : `../guides/hmr-tiddlywiki.md`.
 
 ## Fichiers de config
 - [package.json](package.json) — scripts pnpm, dépendances dev
-- [nodemon.json](nodemon.json) — watch + exec pour le serveur TW
+- [scripts/dev.cjs](scripts/dev.cjs) — orchestrateur `pnpm dev` : résolution des ports (défaut/libre) + spawn nodemon & dev-hmr
+- [scripts/dev-hmr.cjs](scripts/dev-hmr.cjs) — serveur SSE de HMR de contenu (+ reboot/reload sur changement de module)
+- [nodemon.json](nodemon.json) — watch `modules/` + `plugin.info` seulement (port de fallback standalone ; `dev.cjs` surcharge le port réel)
 - [eslint.config.js](eslint.config.js) — lint ES2020, sourceType "script" (IIFE + require/exports)
-- [devwiki/tiddlywiki.info](devwiki/tiddlywiki.info) — plugins actifs : math, katex, highlight, filesystem, tiddlyweb
+- [wiki/tiddlywiki.info](wiki/tiddlywiki.info) — plugins actifs : math, katex, highlight, filesystem, tiddlyweb
 
-## Architecture du widget (calc.widget.js)
+## Architecture du widget (math.widget.js)
 Pipeline dans `_evaluate()` :
 1. `normalize` — uniformise la syntaxe (virgule décimale, opérateurs...)
 2. `scope` (si attribut `scope`) — injecte des variables depuis un tiddler ou un littéral `{a:2, b:5}`
@@ -69,23 +84,19 @@ Attributs clés du widget : `output` (katex/text), `show` (result/formula/full),
 ## Documentation du plugin
 Lorsque l'utilisateur demande une mise à jour de la doc, vérifier la conformité de ces fichiers avec le codebase :
 - `README.md` — doc principale (racine)
-- `plugins/nikorion/math/tiddlers/readme.tid` — readme embarqué dans TW
-- `plugins/nikorion/math/tiddlers/cheatsheet.tid` — référence attributs/notations
-- `plugins/nikorion/math/tiddlers/test.tid` — cas de test dans le wiki
+- `src/math/tiddlers/readme.tid` — readme embarqué dans TW
+- `src/math/tiddlers/cheatsheet.tid` — référence attributs/notations
+- `src/math/tiddlers/test.tid` — cas de test dans le wiki
 - commentaires dans le code des fichiers .js
 
 ## Conventions
 - Tous les modules JS sont des IIFE `(function(){ "use strict"; ... })()` avec `require`/`exports` TiddlyWiki — **pas des ES modules**.
 - `math.min.js` est une dépendance bundlée manuellement — ne jamais régénérer depuis npm.
-- Le wiki de dev s'appelle `devwiki/` (pas `wiki/`).
 - La conf ESLint a `sourceType: "script"` et `no-var: off` pour respecter le style existant.
-
-## Référence TiddlyWiki
-Le dépôt officiel TiddlyWiki5 est cloné localement dans `D:\projets\devops\tw\TiddlyWiki5` — s'y référer pour comprendre les APIs internes (widgets, modules core, système de tiddlers, etc.). Ce dépôt possède son propre `CLAUDE.md`.
 
 ## Points d'attention Windows
 - `pnpm dev` nécessite **deux Ctrl+C** pour quitter : comportement normal sur Windows (les wrappers `.cmd` de nodemon/tiddlywiki demandent confirmation). Ne pas chercher à contourner — tentatives précédentes ont toutes échoué ou laissé le terminal dans un état sale.
-- `pnpm build` : la target `plugin-json` écrit dans `../dist` (relatif à devwiki/).
+- `pnpm build` : la target `plugin-json` écrit dans `../dist` (relatif à wiki/).
 
 ## Pièges PowerShell — leçons apprises
 
@@ -149,15 +160,17 @@ L'outil Edit ne peut pas matcher des chaînes contenant des **caractères Unicod
 - `no-useless-escape` : `"\\\,"` au lieu de `"\\,"` dans une chaîne JS
 
 ## Commandes Git
-Quand l'utilisateur demande un "git push", exécuter ces trois commandes dans l'ordre :
+Quand l'utilisateur demande un "git push", exécuter ces commandes dans l'ordre :
 ```powershell
+pnpm lint
 git add .
 git commit -m "some changes"
 git push
 ```
+Si `pnpm lint` échoue, corriger les erreurs avant de continuer.
 
 ### Diagnostic "Cannot find module X" dans TiddlyWiki
-Quand `calc.widget.js` lève `Cannot find module '$:/plugins/nikorion/math/modules/format.js'` :
+Quand `math.widget.js` lève `Cannot find module '$:/plugins/nikorion/math/modules/format.js'` :
 1. **BOM** — vérifier que le fichier ne commence pas par `EF BB BF` (cause la plus fréquente)
 2. **Erreur de syntaxe** — `node --check fichier.js` (ne détecte que les erreurs syntaxiques, pas runtime)
 3. **Erreur runtime** — le module existe et est valide syntaxiquement mais crashe à l'exécution (require échoue silencieusement côté TW)

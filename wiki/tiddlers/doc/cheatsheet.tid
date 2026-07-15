@@ -1,0 +1,229 @@
+title: $:/plugins/nikorion/math/cheatsheet
+type: text/vnd.tiddlywiki
+
+! `<$math>` Cheatsheet
+
+!! Attributes
+
+|!Attribute |!Values |!Default |!Description |
+| `output` |`katex` · `text` |`katex` |Rendering backend |
+| `show` |`result` · `formula` · `full` |`result` |What to display. `formula`/`full` degrade to `result` when body is a plain literal. |
+| `mode` |`inline` · `block` |`inline` |Display mode. Katex: render mode. `output="text"`: centres result in a block `<div>`. |
+| `decimal` |`point` · `comma` |`point` |Decimal separator. Thousands separator is always NNBSP (U+202F). |
+| `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
+| `precision` |positive integer |6 |Display digits (decimal places or significant digits); ignored for bin/oct/hex |
+| `calcPrec` |`float` · `64` · `128` · `256` |`float` |Arithmetic precision mode ⚠️ |
+| `scope` |tiddler title or `{a:1, b:2}` |— |Variable scope |
+| `silence` |`yes` · `no` |`no` |Suppress expression errors |
+
+;`output` values:
+* `katex` (default) — KaTeX when plugin installed, pretty-printed plain text fallback
+* `text` — always pretty-printed plain text (π, ·, superscripts, √, ∛, !, log₂…)
+
+;`show` values:
+* `result` — evaluate and render the numeric result
+* `formula` — typeset the expression without evaluating; `notation`, `precision`, `calcPrec`, `scope` are ignored. Degrades to `result` when the body is a plain numeric literal.
+* `full` — `formula = result`. Same demotion applies.
+
+;`notation` values:
+* `auto` / `fixed` / `scientific` / `engineering` — decimal output; `precision` controls digits
+* `bin` · `oct` · `hex` — integer-base output; `decimal` and `precision` are ignored
+
+;`precision` semantics by notation:
+* `auto` · `scientific` · `engineering` → significant digits (default 6) — ISO 80000-1
+* `fixed` → decimal places after the point (default 6)
+
+;`notation="auto"` — thresholds (ISO 80000-1: > 4 significant figures → scientific):
+* `|x| < 10⁻³` or `|x| ≥ 10⁴` → scientific notation
+* Otherwise → fixed (decimal) notation
+* Example: `9 999` → `9 999` (fixed); `10 000` → `1 × 10⁴` (scientific); `0.001` → `1 × 10⁻³` (scientific)
+
+---
+
+!! Numeric input — accepted formats
+
+|!Format |!Example |
+|Decimal point |`3.14` |
+|Thousands space |`1 000 000` |
+|Thousands comma (EN style) |`1,000,000` |
+|Scientific notation |`5e9` · `1.5e-3` · `2.5e+6` |
+
+⚠️ Do ''not'' write `5 * e9` — that means 5 times the undefined symbol `e9`.
+
+---
+
+!! Unicode operators and symbols
+
+|!Symbol |!Meaning |!Normalised to |
+|`×` (U+00D7) |multiplication |`*` |
+|`·` (U+00B7) |middle dot |`*` |
+|`÷` (U+00F7) |division |`/` |
+|`−` (U+2212) |minus sign |`-` |
+|`–` (U+2013) |en dash |`-` |
+|`°` (U+00B0) |degree |` deg` |
+|`√x` |square root |`sqrt(x)` |
+|`∛x` |cube root |`cbrt(x)` |
+|`π` |pi |`pi` |
+|`τ` |tau = 2π |`(2*pi)` |
+|`∞` |infinity |`Infinity` |
+|`ℯ` (U+212F) |Euler's number |`e` |
+|`x²` `x³` |superscript exponent |`x^2` `x^3` |
+|`½` `¼` `¾` … |vulgar fractions |`(1/2)` `(1/4)` `(3/4)` … |
+
+---
+
+!! TiddlyWiki variables in expressions
+
+<$codeblock code="<$math><<myMacro>> + 1</$math>"/>
+<$codeblock code="<$math>{{MyTiddler!!value}} * 2</$math>"/>
+<$codeblock code="<$math>{{MyDataTiddler##index}} + 10</$math>"/>
+
+---
+
+!! Arithmetic and functions
+
+;Basic operators
+:`3 + 2` `3 - 2` `3 * 2` `3 / 2` `3 ^ 2` `3 % 2`
+
+;Common functions
+:`sqrt(x)` `cbrt(x)` `abs(x)` `sign(x)`
+:`floor(x)` `ceil(x)` `round(x, n)`
+:`log(x)` `log2(x)` `log10(x)` `exp(x)`
+:`sin(x)` `cos(x)` `tan(x)` `asin(x)` `acos(x)` `atan(x)` `atan2(y,x)`
+:`min(…)` `max(…)` `mean(…)` `sum(…)`
+:`factorial(n)` `gcd(a,b)` `lcm(a,b)` `mod(a,b)`
+:`pow(a,b)` `nthRoot(x,n)` `hypot(…)`
+
+;Constants
+:`pi` `e` `phi` (golden ratio) `Infinity`
+
+---
+
+!! Reserved identifiers ⚠️
+
+|!Name |!Value |!Risk |
+| `e` |Euler's number, 2.718… |shadows the constant for the whole expression |
+| `i` |imaginary unit, √−1 |complex results become plain numbers |
+
+Use `euler`, `base`, `idx`, `imag`, or any other name instead.
+
+---
+
+!! Complex numbers
+
+* `2 + 3i` → `2 + 3i` (displayed normally)
+* `(2 + 3i) * (1 - i)` → `5 + i`
+* `abs(3 + 4i)` → `5` (modulus)
+* `sqrt(-1)` → `i`
+
+---
+
+!! Units
+
+;Arithmetic with units
+* `5 m + 50 cm` → `5.5 m`
+* `9.81 m/s^2 * 80 kg` → `784.8 N`
+* `12 N / m^2` → `12 Pa`
+
+;Conversion (`to`)
+* `12 cm to mm` → `120 mm`
+* `12.7 cm to inch` → `5 inch`
+* `12 m/s to km/h` → `43.2 km/h`
+* `100 degF to degC` → `37.778 °C`
+* `460 V * 20 A * 30 days to kWh` → `6624 kWh`
+
+;Extract numeric value in target unit
+* `number(5cm, mm)` → `50`
+
+---
+
+!! Formula rendering — `show="formula"` / `show="full"`
+
+KaTeX by default when the plugin is installed; pretty-printed plain text otherwise or when `output="text"`.
+
+<$codeblock code="""<$math show="formula">(a+b)/c</$math>
+<$math show="full" mode="block">sqrt(x^2 + 1)</$math>"""/>
+
+;KaTeX automatic conversions:
+* `sqrt(x^2+1)` → `\sqrt{x^{2}+1}`
+* `(a+b)/c` → `\frac{a+b}{c}`
+* `pi` → `\pi`
+
+;Plain text pretty-print conversions (`output="text"`):
+* `pi` → `π`   `e` → `ℯ`   `Infinity` → `∞`
+* `*` → `·`
+* `x^2` → `x²`   `x^23` → `x²³`
+* `sqrt(…)` → `√(…)`   `cbrt(…)` → `∛(…)`
+* `factorial(n)` → `n!`
+* `log10(x)` → `log₁₀(x)`   `log2(x)` → `log₂(x)`
+* Numbers with 4+ digits get NNBSP as thousands separator: `1000000` → `1 000 000`; decimal separator follows the `decimal` attribute.
+* Scientific exponents use Unicode superscripts: `10⁻⁶` not `10^-6`.
+
+⚠️ `show="formula"` does not evaluate — `notation`, `precision`, `calcPrec`, and `scope` are ignored.
+⚠️ `mode="block"` is now honoured for `output="text"` (centres result in a block `<div>`).
+
+---
+
+!! Variable scope — `scope` attribute
+
+;Tiddler mode (one `name: expression` per line)
+<$codeblock code="""<$math scope="MyVars">pi * r^2</$math>"""/>
+
+```
+r: 5
+h: 10
+vol: pi * r^2 * h
+```
+
+Later lines can reference earlier variables. Values must use EN notation.
+
+;Inline mode (object literal, evaluated by mathjs — sandboxed)
+<$codeblock code="""<$math scope="{r: 3, h: 10}">pi * r^2 * h</$math>"""/>
+
+* Keys: `r2` ✓ `my_var` ✓ `_x` ✓ — `2r` ✗ `my-var` ✗
+* No quotes on keys — `{a:1}` not `{"a":1}`
+* Values: EN notation (decimal point), pairs separated by commas
+* `math.unit(5 cm)` auto-quoted — no need for inner quotes
+* With `calcPrec="64/128/256"`, all literals are automatically BigNumber
+* Values may be mathjs expressions: `{angle: pi/4}`
+
+---
+
+!! Precision and performance ⚠️
+
+Default is `float` (IEEE 754, ~16 digits). BigNumber only needed for specific cases.
+
+;When BigNumber is actually needed:
+|!Situation |!Example |!float result |!BigNumber |
+|Catastrophic cancellation |`1e13 + 1.23456789 - 1e13` |`1.234375` ❌ |`1.23456789` ✅ |
+|Subtraction residual |`0.3 - 0.1 - 0.1 - 0.1` |`-2.78e-17` ❌ |`0` ✅ |
+|Integer > 2^53 |`9007199254740993` |`9007199254740992` ❌ |`9007199254740993` ✅ |
+
+;Performance (V8/Node.js):
+|!`calcPrec` |!µs/eval arithmetic |!µs/eval `sin`/`cos` |!Widgets before 16 ms jank |
+| `float` (default) |~13 µs |~14 µs |>1 000 ✅ |
+| `64` |~66 µs |~925 µs |~240 arith. / ~17 trig |
+| `128` |~169 µs |~1 957 µs |~94 arith. / ~8 trig |
+| `256` |~89 µs |~5 346 µs |~180 arith. / ~3 trig |
+
+;Hard limit — trig at high `calcPrec`:
+`sin` `cos` `tan` `asin` `acos` `atan` `sinh` `cosh` throw `[DecimalError] Precision limit exceeded` at precision ≥ 510. The widget caps options at `256`.
+
+;LRU cache:
+500 entries — each unique expression evaluated only once per tiddler change.
+
+;`calcPrec` vs `precision`:
+`calcPrec` → internal accuracy (invisible). `precision` → visible digits. Raising `calcPrec` does ''not'' add visible digits.
+
+---
+
+!! Error messages
+
+All expression errors are debounced 200 ms (suppresses flicker while typing).
+
+|!Situation |!Message |!Silenceable |
+|Unclosed parenthesis |exact position reported |Yes |
+|Unknown identifier |`Unknown function: "sqt" — did you mean "sqrt"?` |Yes |
+|Division by zero |`Result is +∞ — division by zero or overflow` |Yes |
+|Trig at calcPrec ≥ 510 |`[DecimalError] Precision limit exceeded` |Yes |
+|Invalid scope |`Problem with the scope attribute` |Yes |

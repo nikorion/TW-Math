@@ -1,0 +1,34 @@
+title: $:/dev/hmr
+type: application/javascript
+module-type: startup
+
+(function () {
+"use strict";
+exports.name = "dev-hmr";
+exports.platforms = ["browser"];
+exports.after = ["startup"];
+exports.synchronous = true;
+exports.startup = function () {
+  // Paired with scripts/dev-hmr.cjs. Receives content-tiddler pushes and reload
+  // signals over SSE. The port is chosen by scripts/dev.cjs (default 35730, or a
+  // free one if it was busy) and published via $:/config/dev/hmr-port.
+  var port = $tw.wiki.getTiddlerText("$:/config/dev/hmr-port", "35730").trim();
+  var source = new EventSource("http://localhost:" + port + "/hmr");
+  source.onmessage = function (event) {
+    var msg;
+    try { msg = JSON.parse(event.data); } catch (e) { return; }
+    if (msg.type === "reload") {
+      window.location.reload();
+    } else if (msg.type === "tiddlers" && msg.tiddlers) {
+      // A real tiddler of the same title overrides the plugin's shadow and
+      // re-renders reactively — in memory only: $:/config/SyncFilter (overridden
+      // in this wiki) keeps the plugin prefix out of the tiddlyweb sync, so
+      // nothing is persisted to disk or to the server store.
+      msg.tiddlers.forEach(function (fields) {
+        $tw.wiki.addTiddler(new $tw.Tiddler(fields));
+      });
+      console.log("[hmr] applied " + msg.tiddlers.length + " tiddler(s)");
+    }
+  };
+};
+})();

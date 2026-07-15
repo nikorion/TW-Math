@@ -1,0 +1,11 @@
+title: $:/plugins/nikorion/math/macros/lingo
+tags: $:/tags/Global
+
+\procedure math-lingo(title)
+\whitespace trim
+<$let _lang={{{ [[$:/language]get[text]get[name]else[en-GB]] }}}>
+<$transclude $tiddler={{{ [[$:/plugins/nikorion/math/language/]addsuffix<_lang>addsuffix[/]addsuffix<title>] }}}>
+<$transclude $tiddler={{{ [[$:/plugins/nikorion/math/language/en-GB/]addsuffix<title>] }}}/>
+</$transclude>
+</$let>
+\end

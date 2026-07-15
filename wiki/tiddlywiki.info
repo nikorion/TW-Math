@@ -1,0 +1,25 @@
+{
+  "description": "TW-Math development wiki",
+  "plugins": [
+    "tiddlywiki/filesystem",
+    "tiddlywiki/tiddlyweb",
+    "tiddlywiki/katex",
+    "tiddlywiki/highlight",
+    "nikorion/math"
+  ],
+  "themes": [
+    "tiddlywiki/vanilla"
+  ],
+  "pluginPath": "../src",
+  "build": {
+    "plugin-json": [
+      "--output", "dist",
+      "--savetiddler", "$:/plugins/nikorion/math", "TW-Math-Plugin.json", "application/json"
+    ],
+    "html": [
+      "--output", "docs",
+      "--rendertiddler", "$:/core/save/all", "TW-Math-Wiki.html", "text/plain", "",
+      "publishFilter", "-[[$:/dev/hmr]] -[[$:/config/dev/hmr-port]] -[[$:/config/SyncFilter]] -[[$:/plugins/wikilabs/link-to-tabs]] -[[$:/plugins/kookma/commander]] -[[$:/plugins/oeyoews/tiddlywiki-codemirror-6]]"
+    ]
+  }
+}

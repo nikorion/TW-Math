@@ -1,6 +1,10 @@
 node_modules/
 dist/
-devwiki/tiddlers/$__StoryList.tid
-devwiki/tiddlers/$__HistoryList.tid
+wiki/tiddlers/$__StoryList.tid
+wiki/tiddlers/$__HistoryList.tid
+wiki/tiddlers/$__dev-hmr-port.tid
 .DS_Store
 Thumbs.db
+
+# Notes Claude locales (perso, non versionnées)
+CLAUDE.local.md

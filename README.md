@@ -54,10 +54,10 @@ evaluation with:
 ### Notation modes
 
 ```
-<$calc notation="auto">0.00000012</$calc>       <!-- switches to scientific -->
-<$calc notation="fixed" precision="2">3.14</$calc>
-<$calc notation="bin">42</$calc>                <!-- 0b101010 -->
-<$calc notation="hex">255</$calc>               <!-- 0xff -->
+<$math notation="auto">0.00000012</$math>       <!-- switches to scientific -->
+<$math notation="fixed" precision="2">3.14</$math>
+<$math notation="bin">42</$math>                <!-- 0b101010 -->
+<$math notation="hex">255</$math>               <!-- 0xff -->
 ```
 
 | Value | Behaviour |
@@ -97,9 +97,9 @@ KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable
 | `pi * 1000000` | KaTeX | `π · 1 000 000` |
 
 ```
-<$calc show="formula">(a+b)/c</$calc>
-<$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>
-<$calc output="text" show="formula">pi * r^2</$calc>
+<$math show="formula">(a+b)/c</$math>
+<$math show="full" mode="block">sqrt(x^2 + 1)</$math>
+<$math output="text" show="formula">pi * r^2</$math>
 ```
 
 > When `show="formula"`, the expression is not evaluated — `notation`,
@@ -159,38 +159,38 @@ error message.
 ### Basic
 
 ```
-<$calc>1 + 2 * 3</$calc>
+<$math>1 + 2 * 3</$math>
 ```
 
 ### Decimal separator
 
 ```
-<$calc decimal="comma">1234567.89</$calc>
+<$math decimal="comma">1234567.89</$math>
 ```
 
 ### Show modes
 
 ```
-<$calc show="result">sqrt(2)</$calc>
-<$calc show="formula">sqrt(2)</$calc>
-<$calc show="full" mode="block">sqrt(x^2 + 1)</$calc>
+<$math show="result">sqrt(2)</$math>
+<$math show="formula">sqrt(2)</$math>
+<$math show="full" mode="block">sqrt(x^2 + 1)</$math>
 ```
 
 ### Force plain text output
 
 ```
-<$calc output="text" show="formula">pi * r^2</$calc>
+<$math output="text" show="formula">pi * r^2</$math>
 ```
 
 ### Notation
 
 ```
-<$calc notation="scientific">0.00000012</$calc>
-<$calc notation="engineering" decimal="comma">1234567</$calc>
-<$calc notation="fixed" precision="2">3.14159</$calc>
-<$calc notation="bin">42</$calc>
-<$calc notation="oct">42</$calc>
-<$calc notation="hex">255</$calc>
+<$math notation="scientific">0.00000012</$math>
+<$math notation="engineering" decimal="comma">1234567</$math>
+<$math notation="fixed" precision="2">3.14159</$math>
+<$math notation="bin">42</$math>
+<$math notation="oct">42</$math>
+<$math notation="hex">255</$math>
 ```
 
 For `bin`, `oct`, and `hex`: `decimal` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
@@ -198,7 +198,7 @@ For `bin`, `oct`, and `hex`: `decimal` and `precision` are ignored. Non-integer 
 ### Silence errors
 
 ```
-<$calc silence="yes">bad expression</$calc>
+<$math silence="yes">bad expression</$math>
 ```
 
 Renders nothing on error instead of showing an error message.
@@ -206,7 +206,7 @@ Renders nothing on error instead of showing an error message.
 ### Calculation precision
 
 ```
-<$calc calcPrec="64">1e13 + 1.23456789 - 1e13</$calc>
+<$math calcPrec="64">1e13 + 1.23456789 - 1e13</$math>
 ```
 
 See the [precision and performance](#precision-and-performance) section for
@@ -217,7 +217,7 @@ when to use each mode.
 #### Tiddler mode
 
 ```
-<$calc scope="MyVars">pi * r^2</$calc>
+<$math scope="MyVars">pi * r^2</$math>
 ```
 
 `MyVars` is a tiddler with one `name: expression` per line, evaluated in order:
@@ -231,7 +231,7 @@ vol: pi * r^2 * h
 #### Inline mode
 
 ```
-<$calc scope="{r: 3, h: 10}">pi * r^2 * h</$calc>
+<$math scope="{r: 3, h: 10}">pi * r^2 * h</$math>
 ```
 
 Key rules:
@@ -243,10 +243,10 @@ Key rules:
 ### Units
 
 ```
-<$calc>9.81 m/s^2 * 80 kg</$calc>
-<$calc>460 V * 20 A * 30 days to kWh</$calc>
-<$calc>100 degF to degC</$calc>
-<$calc>5 cm + 2 m to inch</$calc>
+<$math>9.81 m/s^2 * 80 kg</$math>
+<$math>460 V * 20 A * 30 days to kWh</$math>
+<$math>100 degF to degC</$math>
+<$math>5 cm + 2 m to inch</$math>
 ```
 
 ### Scientific notation input
@@ -395,6 +395,11 @@ within this limit.
 ---
 
 ## Version history
+
+### v0.5.0 — 2026-07-02
+
+**Breaking change:** the widget is now `<$math>` instead of `<$calc>`. Update
+all wikitext using the plugin.
 
 ### v0.4.0 — 2026-06-15
 

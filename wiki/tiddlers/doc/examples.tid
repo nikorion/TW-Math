@@ -1,0 +1,148 @@
+title: $:/plugins/nikorion/math/examples
+tags: $:/tags/BrowserStorage
+type: text/vnd.tiddlywiki
+
+! `math` widget — examples
+
+!! Arithmetic
+
+| Expression | Result |h
+| `1 + 2 * 3` | <$math>1 + 2 * 3</$math> |
+| `√144` (√ unicode) | <$math>√144</$math> |
+| `∛27` (∛ unicode) | <$math>∛27</$math> |
+| `2² + 3²` (superscripts) | <$math>2² + 3²</$math> |
+| `½ + ¼` (vulgar fractions) | <$math>½ + ¼</$math> |
+| `π * 2` (π unicode) | <$math>π * 2</$math> |
+| `τ / 2` (τ = 2π) | <$math>τ / 2</$math> |
+
+!! Decimal separator
+
+NNBSP (U+202F, narrow no-break space) is always used as thousands separator per ISO 80000-1.
+Only the decimal separator varies.  Scientific exponents render as Unicode superscripts.
+
+| Expression | `decimal="point"` (default) | `decimal="comma"` |h
+| `123456.789` (''`notation="fixed"`'') | <$math notation="fixed">123456.789</$math> | <$math notation="fixed" decimal="comma">123456.789</$math> |
+| `123456.789` (''`notation="scientific"`'') | <$math notation="scientific">123456.789</$math> | <$math notation="scientific" decimal="comma">123456.789</$math> |
+
+!! Notation modes
+
+| Expression | `notation="auto"` (default) | `notation="fixed"` | `notation="scientific"` |h
+| `1234` | <$math notation="auto">1234</$math> | <$math notation="fixed">1234</$math> | <$math notation="scientific">1234</$math> |
+| `12345` | <$math notation="auto">12345</$math> <br> (over 10³ → scientific) | <$math notation="fixed">12345</$math> |  <$math notation="scientific">12345</$math> |
+| `0.001234` | <$math notation="auto">0.001234</$math> | <$math notation="fixed">0.001234</$math> | <$math notation="scientific">0.001234</$math> |
+| `0.00012345` | <$math notation="auto">0.00012345</$math> <br> (below 10⁻³ → scientific) | <$math notation="fixed">0.00012345</$math> | <$math notation="scientific">0.00012345</$math> |
+| Expression | `notation="engineering"` | | |h
+| `12345` | <$math notation="engineering">12345</$math> ||
+| Expression | `notation="bin"` | `notation="oct"` | `notation="hex"` |h
+| `42` | <$math notation="bin">42</$math> | <$math notation="oct">42</$math> | <$math notation="hex">42</$math> |
+
+⚠️ bin/oct/hex: `decimal` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Negative values are accepted.
+
+!! Formula rendering
+
+`show="formula"` and `show="full"` render the expression typeset — via KaTeX by default, as pretty-printed plain text with `output="text"`.
+
+| Expression | `show="result"` (default) | `show="formula"` | `show="full"` |h
+| `sqrt(x^2 + 1)` (''`scope={x:2}`'') | <$math scope="{x:2}">sqrt(x^2 + 1)</$math> | <$math scope="{x:2}" show="formula">sqrt(x^2 + 1)</$math> | <$math scope="{x:2}" show="full">sqrt(x^2 + 1)</$math> |
+| `(a+b)/c` (''`scope={a:1,b:2,c:3}`'') | <$math scope="{a:1,b:2,c:3}">(a+b)/c</$math> | <$math scope="{a:1,b:2,c:3}" show="formula">(a+b)/c</$math> | <$math scope="{a:1,b:2,c:3}" show="full">(a+b)/c</$math> |
+| `pi * r^2` (''`scope={r:2}`'') | <$math scope="{r:2}">pi * r^2</$math> | <$math scope="{r:2}" show="formula">pi * r^2</$math> | <$math scope="{r:2}" show="full">pi * r^2</$math> |
+| `factorial(5)` | <$math>factorial(5)</$math> | <$math show="formula">factorial(5)</$math> | <$math show="full">factorial(5)</$math> |
+| `log10(1000)` | <$math>log10(1000)</$math> | <$math show="formula">log10(1000)</$math> | <$math show="full">log10(1000)</$math> |
+
+Block display (`mode="block"` — works for both `output="katex"` and `output="text"`):
+
+<$math show="full" mode="block">sqrt(3^2 + 4^2)</$math>
+
+<$math output="text" show="full" mode="block">sqrt(3^2 + 4^2)</$math>
+
+!! `output="text"` — plain text mode
+
+Numbers in formulas use NNBSP (U+202F) as thousands separator.  Scientific exponents use Unicode superscripts.
+
+| Expression | `output="text"` `show="formula"` | `output="text"` `show="full"` |h
+| `pi * 1000000` | <$math output="text" show="formula">pi * 1000000</$math> | <$math output="text" show="full">pi * 1000000</$math> |
+| `sqrt(x^2 + 1)` | <$math output="text" show="formula">sqrt(x^2 + 1)</$math> | <$math output="text" show="full">sqrt(9 + 1)</$math> |
+| `42` (plain literal — formula/full → result) | <$math output="text" show="formula">42</$math> | <$math output="text" show="full">42</$math> |
+
+!! Mathematical functions & constants
+
+| Expression | Result |h
+| `sin(π/6)` | <$math>sin(π/6)</$math> |
+| `cos(0)` | <$math>cos(0)</$math> |
+| `log(e^3)` | <$math>log(e^3)</$math> |
+| `log10(1000)` | <$math>log10(1000)</$math> |
+| `abs(−5)` (− unicode minus) | <$math>abs(−5)</$math> |
+| `round(π * 100) / 100` | <$math>round(π * 100) / 100</$math> |
+| `factorial(10)` | <$math>factorial(10)</$math> |
+| `gcd(48, 18)` | <$math>gcd(48, 18)</$math> |
+| `max(3, 7, 2, 9, 1)` | <$math>max(3, 7, 2, 9, 1)</$math> |
+| `√(2^8 + 3^4)` | <$math>√(2^8 + 3^4)</$math> |
+
+!! Unicode operators
+
+| Expression | Meaning | Result |h
+| `3 × 4` | × multiplication | <$math>3 × 4</$math> |
+| `10 ÷ 4` | ÷ division | <$math>10 ÷ 4</$math> |
+| `10 − 3` | − minus (U+2212) | <$math>10 − 3</$math> |
+| `3 · 4` | · middle dot | <$math>3 · 4</$math> |
+| `sin(45°)` | ° degree | <$math>sin(45°)</$math> |
+| `sin(45°) × √2` | combined | <$math>sin(45°) × √2</$math> |
+
+!! Units & conversions
+
+| Expression | Result |h
+| `9.81 m/s^2 * 80 kg` (force) | <$math>9.81 m/s^2 * 80 kg</$math> |
+| `9.81 m/s^2 * 80 kg * 10 m` (energy) | <$math>9.81 m/s^2 * 80 kg * 10 m</$math> |
+| `12 cm to mm` | <$math>12 cm to mm</$math> |
+| `100 degF to degC` | <$math>100 degF to degC</$math> |
+| `460 V * 20 A * 30 days to kWh` | <$math>460 V * 20 A * 30 days to kWh</$math> |
+| `100 km/h to m/s` | <$math>100 km/h to m/s</$math> |
+| `3 kg + 1500 g` (mixed units) | <$math>3 kg + 1500 g</$math> |
+
+!! Complex numbers
+
+| Expression | Result |h
+| `2 + 3i` | <$math>2 + 3i</$math> |
+| `(2 + 3i) * (1 - i)` | <$math>(2 + 3i) * (1 - i)</$math> |
+| `abs(3 + 4i)` (modulus) | <$math>abs(3 + 4i)</$math> |
+| `sqrt(-1)` | <$math>sqrt(-1)</$math> |
+
+!! Variables via scope tiddler
+
+''Prerequisite:'' create a tiddler titled `MyVars` with this content:
+
+```
+r: 5
+h: 10
+density: 2.7
+```
+
+Then:
+
+| Expression | Result |h
+| `π * r^2` (circle area) | <$math scope="MyVars">π * r^2</$math> |
+| `π * r^2 * h` (cylinder volume) | <$math scope="MyVars">π * r^2 * h</$math> |
+| `density * π * r^2 * h` (mass) | <$math scope="MyVars">density * π * r^2 * h</$math> |
+
+!! Variables via inline scope
+
+| Expression | Result |h
+| `pi * r^2 * h` | <$math scope="{r: 3, h: 10}">pi * r^2 * h</$math> |
+| `sqrt(a^2 + b^2)` | <$math scope="{a: 1.5, b: 2.5}">sqrt(a^2 + b^2)</$math> |
+
+!! BigNumber precision
+
+| Expression | `calcPrec="float"` | `calcPrec="64"` |h
+| `1e13 + 1.23456789 - 1e13` | <$math>1e13 + 1.23456789 - 1e13</$math> | <$math calcPrec="64">1e13 + 1.23456789 - 1e13</$math> |
+| `0.3 - 0.1 - 0.1 - 0.1` | <$math>0.3 - 0.1 - 0.1 - 0.1</$math> | <$math calcPrec="64">0.3 - 0.1 - 0.1 - 0.1</$math> |
+
+!! Error messages & debouncing
+
+The widget waits 200 ms after the last change before showing an error. Examples:
+
+| Expression | Message |h
+| `sqrt(` | <$math>sqrt(</$math> |
+| `1 / 0` | <$math>1 / 0</$math> |
+| `sqt(4)` | <$math>sqt(4)</$math> |
+| `1 +` | <$math>1 +</$math> |
+| `not_a_function(1)` (silence → blank) | <$math silence="yes">not_a_function(1)</$math> |

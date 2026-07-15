@@ -1,6 +1,5 @@
 {
-  "watch": ["plugins/nikorion/math"],
-  "ext": "js,tid,json,meta",
-  "ignore": ["plugins/nikorion/math/modules/math.min.js"],
-  "exec": "tiddlywiki devwiki --listen port=8485"
+  "watch": ["src/math/modules", "src/math/plugin.info"],
+  "ext": "js,info",
+  "exec": "tiddlywiki wiki --listen port=8080"
 }
