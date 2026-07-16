@@ -1,7 +1,8 @@
 node_modules/
 dist/
-wiki/tiddlers/$__StoryList.tid
-wiki/tiddlers/$__HistoryList.tid
+wiki/tiddlers/$__StoryList*
+wiki/tiddlers/$__HistoryList*
+wiki/tiddlers/$__Import.tid
 wiki/tiddlers/$__dev-hmr-port.tid
 .DS_Store
 Thumbs.db
