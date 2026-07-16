@@ -26,13 +26,20 @@ const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || 8080;
 const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || 35730;
 const PORT_TIDDLER = path.resolve("wiki/tiddlers/$__dev-hmr-port.tid");
 
+// TiddlyWiki's `--listen` defaults to host 127.0.0.1, so probe that same
+// interface. Binding 0.0.0.0 here gave false positives on Windows: it succeeds
+// even when another process already holds 127.0.0.1:<port>, so a stale dev
+// server was reported "free" and TW then crashed with EADDRINUSE instead of
+// moving aside.
+const HOST = "127.0.0.1";
+
 // Can we bind this port right now? (briefly opens then closes a listener)
 function isFree(port) {
   return new Promise((resolve) => {
     const srv = net.createServer();
     srv.once("error", () => resolve(false));
     srv.once("listening", () => srv.close(() => resolve(true)));
-    srv.listen(port, "0.0.0.0");
+    srv.listen(port, HOST);
   });
 }
 
@@ -41,7 +48,7 @@ function randomFreePort() {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
     srv.once("error", reject);
-    srv.listen(0, () => {
+    srv.listen(0, HOST, () => {
       const { port } = srv.address();
       srv.close(() => resolve(port));
     });
