@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      # TiddlyWiki resolves the plugin name "nikorion/math" through
+      # TIDDLYWIKI_PLUGIN_PATH (a dir of symlinks, one per plugin) — same mechanism as
+      # locally. Recreate just this plugin's symlink so the build resolves it off-machine.
+      - name: Set up plugin symlink
+        run: |
+          mkdir -p "$RUNNER_TEMP/tw-plugins/nikorion"
+          ln -s "$GITHUB_WORKSPACE/src/math" "$RUNNER_TEMP/tw-plugins/nikorion/math"
+          echo "TIDDLYWIKI_PLUGIN_PATH=$RUNNER_TEMP/tw-plugins" >> "$GITHUB_ENV"
+
+      - run: pnpm build

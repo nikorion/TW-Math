@@ -3,10 +3,18 @@ type: text/vnd.tiddlywiki
 tags: $:/tags/ControlPanel/SettingsTab
 caption: <<math-lingo Configs/Caption>>
 
-\define stateTidd(attr) $:/state/plugins/nikorion/math/defaults/$attr$
+\define configTidd(attr) $:/config/nikorion/math/$attr$
+
+<!--
+Global-defaults tab for <$math>. Each control edits
+$:/config/nikorion/math/<attr>; the reset button deletes that real
+tiddler so the shipped shadow default (default-config.multids) shows
+through again — same three-tier resolution (widget attribute → real config
+tiddler → shadow default) as TW-Hover-Tilt's settings tab.
+-->
 
 \define resetBtn(attr)
-<$set name="cfg" value=<<stateTidd $attr$>>>
+<$set name="cfg" value=<<configTidd $attr$>>>
 <$button tooltip=<<math-lingo Configs/ResetTooltip>> class="tc-btn-invisible" disabled={{{ [<cfg>!is[tiddler]then[yes]else[no]] }}}>
 <$action-deletetiddler $tiddler=<<cfg>>/>{{$:/core/images/refresh-button}}
 </$button>
@@ -35,7 +43,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`output`</td>
 <td>
-<$tiddler tiddler=<<stateTidd output>>>
+<$tiddler tiddler=<<configTidd output>>>
 <$radio field="text" value="katex" default="katex">&nbsp;katex</$radio>
 <$radio field="text" value="text">&nbsp;text</$radio>
 </$tiddler>
@@ -46,7 +54,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`show`</td>
 <td>
-<$tiddler tiddler=<<stateTidd show>>>
+<$tiddler tiddler=<<configTidd show>>>
 <$radio field="text" value="result" default="result">&nbsp;result</$radio>
 <$radio field="text" value="formula">&nbsp;formula</$radio>
 <$radio field="text" value="full">&nbsp;full</$radio>
@@ -58,7 +66,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`mode`</td>
 <td>
-<$tiddler tiddler=<<stateTidd mode>>>
+<$tiddler tiddler=<<configTidd mode>>>
 <$radio field="text" value="inline" default="inline">&nbsp;inline</$radio>
 <$radio field="text" value="block">&nbsp;block</$radio>
 </$tiddler>
@@ -69,7 +77,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`decimal`</td>
 <td>
-<$tiddler tiddler=<<stateTidd decimal>>>
+<$tiddler tiddler=<<configTidd decimal>>>
 <$radio field="text" value="point" default="point">&nbsp;point</$radio>
 <$radio field="text" value="comma">&nbsp;comma</$radio>
 </$tiddler>
@@ -80,7 +88,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`notation`</td>
 <td>
-<$tiddler tiddler=<<stateTidd notation>>>
+<$tiddler tiddler=<<configTidd notation>>>
 <$radio field="text" value="auto" default="auto">&nbsp;auto</$radio>
 <$radio field="text" value="fixed">&nbsp;fixed</$radio>
 <$radio field="text" value="scientific">&nbsp;scientific</$radio>
@@ -97,7 +105,7 @@ caption: <<math-lingo Configs/Caption>>
 <td>`precision`</td>
 <td>
 <$let _lang={{{ [[$:/language]get[text]get[name]else[en-GB]] }}}>
-<$edit-text tiddler=<<stateTidd precision>> field="text" placeholder={{{ [[$:/plugins/nikorion/math/language/]addsuffix<_lang>addsuffix[/Configs/PrecisionPlaceholder]get[text]else[6 (default)]] }}} tag="input" class="math-cfg-prec"/>
+<$edit-text tiddler=<<configTidd precision>> field="text" placeholder={{{ [[$:/plugins/nikorion/math/language/]addsuffix<_lang>addsuffix[/Configs/PrecisionPlaceholder]get[text]else[6 (default)]] }}} tag="input" class="math-cfg-prec"/>
 </$let>
 </td>
 <td><<resetBtn precision>></td>
@@ -106,7 +114,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`calcPrec`</td>
 <td>
-<$tiddler tiddler=<<stateTidd calcPrec>>>
+<$tiddler tiddler=<<configTidd calcPrec>>>
 <$radio field="text" value="float" default="float">&nbsp;float</$radio>
 <$radio field="text" value="64">&nbsp;64</$radio>
 <$radio field="text" value="128">&nbsp;128</$radio>
@@ -119,7 +127,7 @@ caption: <<math-lingo Configs/Caption>>
 <tr>
 <td>`silence`</td>
 <td>
-<$tiddler tiddler=<<stateTidd silence>>>
+<$tiddler tiddler=<<configTidd silence>>>
 <$radio field="text" value="no" default="no">&nbsp;no</$radio>
 <$radio field="text" value="yes">&nbsp;yes</$radio>
 </$tiddler>

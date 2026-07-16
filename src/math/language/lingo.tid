@@ -1,4 +1,4 @@
-title: $:/plugins/nikorion/math/macros/lingo
+title: $:/plugins/nikorion/math/language/lingo
 tags: $:/tags/Global
 
 \procedure math-lingo(title)

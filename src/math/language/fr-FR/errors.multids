@@ -1,12 +1,5 @@
 title: $:/plugins/nikorion/math/language/fr-FR/
 
-Configs/Caption: Math
-Configs/ResetTooltip: Réinitialiser
-Configs/Title: Widget `math` — Valeurs par défaut
-Configs/Description: Ces paramètres remplacent les valeurs par défaut de tous les widgets $math du wiki.
-Configs/Attribute: Attribut
-Configs/Value: Valeur
-Configs/PrecisionPlaceholder: 6 (défaut)
 Errors/AwaitingInput: Widget $math en attente de saisie…
 Errors/ScopeAttribute: Problème avec l'attribut scope
 Errors/ErrorPrefix: Erreur

@@ -1,0 +1,10 @@
+title: $:/config/nikorion/math/
+
+output: katex
+show: result
+mode: inline
+decimal: point
+notation: auto
+precision: 6
+calcPrec: float
+silence: no

@@ -1,0 +1,290 @@
+title: $:/plugins/nikorion/math/language/fr-FR/readme
+type: text/vnd.tiddlywiki
+
+!! Aperçu
+
+Un widget TiddlyWiki léger intégrant Math.js pour l'évaluation d'expressions en ligne.
+
+Capacités clés :
+
+* séparateur décimal configurable (`point` ou `comma`)
+* saisie en notation EN : point décimal, séparateurs de milliers (espace ou virgule EN), notation scientifique
+* précision numérique configurable : float natif (défaut) ou BigNumber (64 / 128 / 256 chiffres significatifs)
+* sortie consciente des unités, avec simplification automatique et conversion explicite
+* cache LRU des résultats pour la performance
+* validation statique des expressions avec messages d'erreur clairs et suggestions « vouliez-vous dire ? »
+* rendu KaTeX par défaut quand le plugin est installé ; repli élégant en texte brut mis en forme
+
+---
+
+!! Attributs
+
+|!Attribut |!Valeurs |!Défaut |!Description |
+| `output` |`katex` · `text` |`katex` |Moteur de rendu — KaTeX ou texte brut |
+| `show` |`result` · `formula` · `full` |`result` |Ce qui est affiché |
+| `mode` |`inline` · `block` |`inline` |Mode d'affichage KaTeX/texte brut |
+| `decimal` |`point` · `comma` |`point` |Séparateur décimal — `point` (1.5) ou `comma` (1,5) |
+| `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Notation de la sortie numérique |
+| `precision` |entier positif |6 |Chiffres affichés — décimales pour `auto`/`fixed`, chiffres significatifs pour `scientific`/`engineering` ; ignoré pour `bin`/`oct`/`hex` |
+| `calcPrec` |`float` · `64` · `128` · `256` |`float` |Mode de précision de calcul — voir l'avertissement ci-dessous |
+| `scope` |titre de tiddler ou `{a:1, b:2}` |— |Portée de variables injectée dans l'expression |
+| `silence` |`yes` · `no` |`no` |Supprime l'affichage des erreurs d'expression |
+
+!!! Attribut `output`
+
+;`output="katex"` (défaut)
+:Rendu via KaTeX quand le plugin est installé. Repli automatique en texte brut mis en forme si le plugin est absent.
+
+;`output="text"`
+:Toujours rendu en texte brut mis en forme (π, ·, exposants, √, ∛, !, log₂…). Aucune dépendance à KaTeX.
+
+!!! Attribut `show`
+
+;`show="result"` (défaut)
+:Évalue l'expression et affiche le résultat numérique.
+
+;`show="formula"`
+:Compose l'expression sans l'évaluer. Avec `output="katex"`, conversion en LaTeX via `math.parse().toTex()`. Avec `output="text"`, rendu en texte brut mis en forme. `notation`, `precision`, `calcPrec` et `scope` sont ignorés.
+
+;`show="full"`
+:Affiche la formule et son résultat évalué ensemble : `formule = résultat`. La partie formule suit les mêmes règles de rendu que `show="formula"`.
+
+!!! Attribut `mode`
+
+;`mode="inline"` (défaut)
+:KaTeX ou texte brut s'affiche en ligne avec le texte environnant.
+
+;`mode="block"`
+:KaTeX ou texte brut s'affiche en mode centré, hors texte (plus grand, sur sa propre ligne).
+
+!!! Attribut `notation`
+
+|!Valeur |!Comportement |!`precision` par défaut |
+| `auto` |décimal pour la plupart des valeurs ; scientifique pour │x│ < 1e-6 ou │x│ > 1e12 |6 |
+| `fixed` |toujours décimal |6 |
+| `scientific` |toujours scientifique : `1.234 × 10³` |6 |
+| `engineering` |exposant toujours multiple de 3 |6 |
+| `bin` |entier binaire, préfixé `0b` — ex. `0b101010` |ignoré |
+| `oct` |entier octal, préfixé `0o` — ex. `0o52` |ignoré |
+| `hex` |entier hexadécimal, préfixé `0x` — ex. `0xff` |ignoré |
+
+''Règles bin/oct/hex :''
+
+* `decimal` et `precision` sont ignorés.
+* Les résultats BigNumber sont convertis via `toNumber()` avant la mise en forme.
+* Les valeurs négatives sont acceptées : `-42` → `-0b101010`.
+* Les valeurs non entières sont tronquées silencieusement : `3.7` → `0b11`.
+* Les résultats unitaires produisent une erreur — extraire d'abord la valeur numérique avec `number(expr, unit)`.
+
+!!! Quand `silence="yes"` est-il utile ?
+
+`silence="yes"` supprime les erreurs qui proviennent de l'''expression elle-même'' — pas de la configuration du widget. Utile quand :
+
+* L'expression dépend d'une variable TiddlyWiki (`<<maVar>>`) pas encore définie.
+* Un tableau où certaines cellules n'ont pas encore de valeur, faisant échouer temporairement les expressions.
+* Un contexte de prévisualisation en direct où l'expression est saisie progressivement.
+
+Le debounce de 200 ms couvre déjà l'invalidité momentanée pendant la saisie. `silence` couvre les cas où l'expression reste invalide même après stabilisation — ne rien afficher vaut mieux qu'un message d'erreur permanent.
+
+---
+
+!! Notation en saisie
+
+|!Format |!Exemple |
+|Point décimal |`3.14` |
+|Espace comme séparateur de milliers (U+0020, U+00A0, U+2009, U+202F) |`1 000 000` |
+|Virgule comme séparateur de milliers (style EN) |`1,000,000` |
+|Notation scientifique |`5e9` · `1.5e-3` · `2.5e+6` |
+
+⚠️ Ne ''pas'' écrire `5 * e9` — cela signifie 5 fois le symbole non défini `e9`.
+
+---
+
+!! Opérateurs et symboles Unicode
+
+|!Symbole |!Signification |!Normalisé en |
+|`×` (U+00D7) |multiplication |`*` |
+|`·` (U+00B7) |point médian |`*` |
+|`÷` (U+00F7) |division |`/` |
+|`−` (U+2212) |signe moins |`-` |
+|`–` (U+2013) |tiret demi-cadratin |`-` |
+|`°` (U+00B0) |degré |` deg` |
+|`√x` |racine carrée |`sqrt(x)` |
+|`∛x` |racine cubique |`cbrt(x)` |
+|`π` |pi |`pi` |
+|`τ` |tau = 2π |`(2*pi)` |
+|`∞` |infini |`Infinity` |
+|`ℯ` (U+212F) |nombre d'Euler |`e` |
+|`x²` `x³` |exposant en exposant |`x^2` `x^3` |
+|`½` `¼` `¾` … |fractions vulgaires |`(1/2)` `(1/4)` `(3/4)` … |
+
+---
+
+!! Utilisation
+
+!!! Basique
+
+<$codeblock code="<$math>1 + 2 * 3</$math>"/>
+
+!!! Séparateur décimal
+
+Contrôle le séparateur décimal dans la sortie numérique. Le séparateur de milliers est toujours NNBSP (U+202F).
+
+<$codeblock code="""<$math decimal="comma">1234567.89</$math>"""/>
+
+!!! Modes d'affichage
+
+<$codeblock code="""<$math show="result">sqrt(2)</$math>
+<$math show="formula">sqrt(2)</$math>
+<$math show="full" mode="block">sqrt(x^2 + 1)</$math>"""/>
+
+!!! Forcer la sortie en texte brut
+
+<$codeblock code="""<$math output="text" show="formula">pi * r^2</$math>"""/>
+
+!!! Silencer les erreurs
+
+<$codeblock code="""<$math silence="yes">expression invalide</$math>"""/>
+
+!!! Notation
+
+<$codeblock code="""<$math notation="scientific">0.00000012</$math>
+<$math notation="engineering" decimal="comma">1234567</$math>
+<$math notation="fixed" precision="2">3.14159</$math>
+<$math notation="bin">42</$math>
+<$math notation="oct">42</$math>
+<$math notation="hex">255</$math>"""/>
+
+!!! Portée de variables — mode tiddler
+
+<$codeblock code="""<$math scope="MyVars">pi * r^2</$math>"""/>
+
+`MyVars` est un tiddler avec une expression `nom: expression` par ligne, évaluées dans l'ordre :
+
+```
+r: 5
+h: 10
+vol: pi * r^2 * h
+```
+
+!!! Portée de variables — mode inline
+
+<$codeblock code="""<$math scope="{r: 3, h: 10}">pi * r^2 * h</$math>"""/>
+
+Règles clés : identifiants mathjs valides (`[a-zA-Z_$][a-zA-Z0-9_$]*`), valeurs en notation EN, paires séparées par des virgules, `math.unit(5 cm)` auto-guillemeté.
+
+!!! Précision BigNumber
+
+<$codeblock code="""<$math calcPrec="64">1e13 + 1.23456789 - 1e13</$math>"""/>
+
+Avec `calcPrec="64/128/256"`, tous les littéraux numériques sont automatiquement en BigNumber — pas besoin de `math.bignumber()`.
+
+!!! Unités
+
+<$codeblock code="""<$math>9.81 m/s^2 * 80 kg</$math>
+<$math>460 V * 20 A * 30 days to kWh</$math>
+<$math>100 degF to degC</$math>"""/>
+
+---
+
+!! Identifiants réservés
+
+mathjs prédéfinit deux constantes à une lettre :
+
+|!Identifiant |!Signification mathjs |
+| `e` |nombre d'Euler — 2,718281828… (aussi `ℯ` U+212F) |
+| `i` |unité imaginaire — √−1 |
+
+Définir `e` ou `i` dans `scope` masque silencieusement ces constantes. Utiliser plutôt `euler`, `base`, `idx`, `imag`, etc.
+
+---
+
+!! Précision et performance
+
+!!! Mode par défaut : float
+
+Par défaut, le widget utilise le `float64` IEEE 754 natif (~16 chiffres significatifs). Le formateur plafonne la sortie à `precision` décimales, ce qui supprime la plupart des artefacts du float :
+
+|!Expression |!Valeur float brute |!Affiché |
+| `0.1 + 0.2` |`0.30000000000000004` |`0.3` ✅ |
+| `9.81 * 80` |`784.8000000000001` |`784.8` ✅ |
+
+!!! Quand utiliser BigNumber
+
+Basculer uniquement quand float produit un ''résultat visiblement faux'' :
+
+|!Situation |!Exemple |!float |!BigNumber |
+|Annulation catastrophique |`1e13 + 1.23456789 - 1e13` |`1.234375` ❌ |`1.23456789` ✅ |
+|Résidu de soustraction |`0.3 - 0.1 - 0.1 - 0.1` |`-2.78e-17` ❌ |`0` ✅ |
+|Entier > MAX_SAFE_INTEGER |`9007199254740993` |`9007199254740992` ❌ |`9007199254740993` ✅ |
+
+!!! Modes de précision
+
+|!`calcPrec` |!Moteur |!Chiffres significatifs |!Coût typique vs float |
+| `float` (défaut) |float64 IEEE 754 |~16 |1× (référence) |
+| `64` |BigNumber |64 |~3–4× plus lent |
+| `128` |BigNumber |128 |~5–6× plus lent |
+| `256` |BigNumber |256 |~8–10× plus lent |
+
+!!! Précision d'affichage vs interne
+
+`calcPrec` contrôle la précision interne. `precision` contrôle les chiffres affichés. Augmenter `calcPrec` n'ajoute ''pas'' de chiffres affichés — cela réduit seulement les erreurs d'arrondi dans les calculs intermédiaires.
+
+Note sur le nombre de chiffres BigNumber : `calcPrec="64"` signifie 64 chiffres significatifs ''décimaux'' (~213 bits), à ne pas confondre avec une largeur en bits IEEE 754.
+
+!!! Seuils de performance
+
+|!`calcPrec` |!µs/éval (arithmétique) |!µs/éval (`sin`/`cos`) |!Widgets avant saccade à 16 ms |
+| `float` |~13 µs |~14 µs |>1 000 ✅ |
+| `64` |~66 µs |~925 µs |~240 arith. / ~17 trig |
+| `128` |~169 µs |~1 957 µs |~94 arith. / ~8 trig |
+| `256` |~89 µs |~5 346 µs |~180 arith. / ~3 trig |
+
+Le cache LRU (500 entrées) fait que chaque expression unique n'est évaluée qu'une fois par changement de tiddler.
+
+!!! Limite dure : fonctions trigonométriques à haute précision
+
+`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh` lèvent `[DecimalError] Precision limit exceeded` à une précision ≥ 510. Le widget plafonne les options BigNumber à `256`, en toute sécurité sous cette limite.
+
+---
+
+!! Limitations
+
+* Pas un tableur — aucun graphe de dépendances entre tiddlers
+* Pas de propagation réactive de variables entre widgets
+* Le bac à sable est heuristique, pas une VM sécurisée
+* La sortie KaTeX couvre les cas courants ; le LaTeX avancé (`\color`, `\align`, `\underbrace`) nécessite du LaTeX brut via `<$katex />`
+
+---
+
+!! Historique des versions
+
+;v0.5.0 — 2026-07-02
+:''Changement cassant :'' le widget est maintenant `<$math>` au lieu de `<$calc>`. Mettre à jour tout le wikitext utilisant le plugin.
+
+;v0.3.0 — 2026-06-13
+:Nouvel attribut `output` (`katex` par défaut / `text`). KaTeX est désormais opt-out plutôt qu'opt-in : actif par défaut quand le plugin est installé, repli élégant en texte brut sinon. Le mode texte brut utilise un nouveau formateur (π, ·, exposants, √, ∛, !, log₂…) au lieu de chaînes d'expression brutes. Les nombres complexes s'affichent désormais normalement au lieu de produire une erreur. Les températures s'affichent avec les symboles `°C` / `°F`. La notation en base entière (`bin`/`oct`/`hex`) tronque désormais correctement les valeurs non entières. La virgule de style EN est acceptée comme séparateur de milliers en saisie (`1,000,000`).
+
+;v0.2.0 — 2026-06-12
+:API simplifiée : `show` et `mode` remplacent `render` ; la saisie est désormais EN uniquement ; toute la sortie passe par KaTeX (avec repli en texte brut). Nouveau mode `show="full"` affichant formule et résultat ensemble. `notation` remplace `scientific`. `scope` remplace `data`. `calcPrec` remplace `precision` pour la précision de calcul ; `precision` désigne désormais le nombre de chiffres affichés. Ajout de `notation="bin"`, `"oct"`, `"hex"` pour la sortie en base entière.
+
+;v0.1.0 — 2026-06-06
+:Première publication. Établit la structure du plugin et le pipeline d'évaluation.
+
+---
+
+!! Crédits
+
+Inspiré de [[tiddly-mathjs|https://github.com/mklauber/tiddly-mathjs]] par mklauber.
+
+Évaluation mathématique par [[Math.js|https://github.com/josdejong/mathjs]], créé par Jos de Jong.
+
+Icône depuis [[SVG Repo|https://www.svgrepo.com/svg/260088/calculator]] — voir les conditions d'utilisation de SVG Repo.
+
+Développé avec l'aide de Claude d'Anthropic pour le code, la relecture, le remaniement et la documentation.
+
+---
+
+!! Licence
+
+MIT — voir `LICENSE`. Inclut Math.js (Apache 2.0).

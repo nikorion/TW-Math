@@ -131,12 +131,15 @@ module-type: widget
   const renderer     = require("$:/plugins/nikorion/math/modules/renderer.js");
   const lang         = require("$:/plugins/nikorion/math/modules/lang.js");
 
-  var DEFAULTS_PREFIX = "$:/state/plugins/nikorion/math/defaults/";
+  var DEFAULTS_PREFIX = "$:/config/nikorion/math/";
 
   // 3-tier attribute resolution:
   //   1. Explicit widget attribute  <$math notation="fixed">
-  //   2. ControlPanel default tiddler  $:/state/plugins/nikorion/math/defaults/<name>
-  //   3. Hard-coded default (fallback of last resort)
+  //   2. ControlPanel setting tiddler  $:/config/nikorion/math/<name>
+  //      — a real tiddler when overridden, otherwise resolves transparently
+  //      to the shipped shadow default (default-config.multids).
+  //   3. Hard-coded default (fallback of last resort, in case the shadow
+  //      default tiddler is ever missing).
   // This lets users set wiki-wide defaults via the ControlPanel without
   // forcing every widget to repeat the same attribute.
   function getAttr(widget, name, hardDefault) {
