@@ -1,5 +1,9 @@
 title: $:/plugins/nikorion/math/history
 type: text/vnd.tiddlywiki
 
-* ''0.1.0'' -- 2026.06.06 -- Hello !
-* ''0.5.0'' -- 2026.07.02 -- Breaking change: widget renamed `<$calc>` → `<$math>`.
+\whitespace trim
+<$let _lang={{{ [[$:/language]get[text]get[name]else[en-GB]] }}}>
+<$transclude $mode="block" $tiddler={{{ [[$:/plugins/nikorion/math/language/]addsuffix<_lang>addsuffix[/history]] }}}>
+<$transclude $mode="block" $tiddler="$:/plugins/nikorion/math/language/en-GB/history"/>
+</$transclude>
+</$let>
