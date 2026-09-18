@@ -35,7 +35,17 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const WATCH_DIR = path.resolve("src/math");
+// Two watch roots: the plugin's own shadow content (src/<name>) AND the dev
+// wiki's real tiddlers (wiki/tiddlers) — editing a demo/playground tiddler by
+// hand should hot-swap exactly like editing plugin content (see
+// ../../guides/hmr-tiddlywiki.md §6 for the "wiki/tiddlers" addendum). The
+// wiki/tiddlers root is the same relative path on every nikorion plugin, so
+// unlike WATCH_DIR it needs no per-plugin adaptation when porting this file.
+const WATCH_DIRS = [path.resolve("src/math"), path.resolve("wiki/tiddlers")];
+// Transient/generated wiki tiddlers (see .gitignore): excluded from
+// $:/config/SyncFilter so they shouldn't normally reappear on disk, but skip
+// them defensively — they carry no content worth pushing.
+const IGNORED_BASENAME = /^\$__(StoryList|HistoryList|Import|dev-hmr-port)\b/;
 // Port TW listens on — injected by scripts/dev.cjs (resolved to 8080 or a random
 // free port); 8080 is the standalone fallback. Only used by the readiness probe.
 const TW_PORT = Number(process.env.TW_PORT) || 8080;
@@ -219,14 +229,17 @@ async function handleReboot() {
 
 // ── file watching + classification ────────────────────────────────────
 let debounce = null;
-const pending = new Set();
+const pending = new Set(); // absolute paths, deduped across both watch roots
 
-fs.watch(WATCH_DIR, { recursive: true }, (_event, filename) => {
-  if (!filename) return;
-  pending.add(filename);
-  clearTimeout(debounce);
-  debounce = setTimeout(flush, 100);
-});
+for (const dir of WATCH_DIRS) {
+  fs.watch(dir, { recursive: true }, (_event, filename) => {
+    if (!filename) return;
+    if (IGNORED_BASENAME.test(path.basename(filename))) return;
+    pending.add(path.join(dir, filename));
+    clearTimeout(debounce);
+    debounce = setTimeout(flush, 100);
+  });
+}
 
 function flush() {
   const files = [...pending];
@@ -236,19 +249,18 @@ function flush() {
   const assets = new Set(); // resolved asset paths to (re)build, deduped
 
   for (const filename of files) {
-    let rel = filename;
-    let ext = path.extname(rel).slice(1).toLowerCase();
+    let abs = filename;
+    let ext = path.extname(abs).slice(1).toLowerCase();
     // A `.meta` change re-pushes its paired base file (or reboots if that base
     // is a module).
     if (ext === "meta") {
-      rel = rel.replace(/\.meta$/, "");
-      ext = path.extname(rel).slice(1).toLowerCase();
+      abs = abs.replace(/\.meta$/, "");
+      ext = path.extname(abs).slice(1).toLowerCase();
     }
     if (REBOOT_EXTS.has(ext)) {
       needsReboot = true;
       continue;
     }
-    const abs = path.join(WATCH_DIR, rel);
     if (ext === "tid" || ext === "multids") {
       if (!fs.existsSync(abs)) continue;
       try {
@@ -256,7 +268,7 @@ function flush() {
           fs.readFileSync(abs, "utf8")
         ));
       } catch (err) {
-        process.stderr.write(`[hmr] parse failed for ${rel}: ${err.message}\n`);
+        process.stderr.write(`[hmr] parse failed for ${abs}: ${err.message}\n`);
       }
     } else if (ext) {
       assets.add(abs); // .css / .svg / .json / image / …
@@ -285,4 +297,4 @@ function flush() {
   }
 }
 
-process.stdout.write(`[hmr] watching ${WATCH_DIR}\n`);
+process.stdout.write(`[hmr] watching ${WATCH_DIRS.join(", ")}\n`);
