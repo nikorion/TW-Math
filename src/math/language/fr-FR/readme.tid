@@ -23,9 +23,10 @@ Capacités clés :
 | `output` |`katex` · `text` |`katex` |Moteur de rendu — KaTeX ou texte brut |
 | `show` |`result` · `formula` · `full` |`result` |Ce qui est affiché |
 | `mode` |`inline` · `block` |`inline` |Mode d'affichage KaTeX/texte brut |
-| `decimal` |`point` · `comma` |`point` |Séparateur décimal — `point` (1.5) ou `comma` (1,5) |
+| `decimal` |`auto` · `point` · `comma` |`auto` |Séparateur décimal — `auto` suit la langue du wiki (virgule pour fr, de, es…), ou forcer `point` (1.5) / `comma` (1,5) |
 | `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Notation de la sortie numérique |
 | `precision` |entier positif |6 |Chiffres affichés — décimales pour `auto`/`fixed`, chiffres significatifs pour `scientific`/`engineering` ; ignoré pour `bin`/`oct`/`hex` |
+| `trailingZeros` |`yes` · `no` |`no` |Garder les zéros de fin jusqu'à `precision` chiffres (`2,00000`) ou les retirer (`2`). Sans cet attribut, poser `precision` sur le widget lui-même les garde aussi |
 | `calcPrec` |`float` · `64` · `128` · `256` |`float` |Mode de précision de calcul — voir l'avertissement ci-dessous |
 | `scope` |titre de tiddler ou `{a:1, b:2}` |— |Portée de variables injectée dans l'expression |
 | `silence` |`yes` · `no` |`no` |Supprime l'affichage des erreurs d'expression |

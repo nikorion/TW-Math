@@ -47,6 +47,8 @@ module-type: library
     return (t && t.fields && t.fields.name) ? t.fields.name : FALLBACK;
   }
 
+  exports.getLangCode = getLangCode;
+
   // Return a localised string for `key`.
   // Falls back to en-GB when the active language has no entry for `key`,
   // and returns `key` itself as a last resort so the UI never shows blank.

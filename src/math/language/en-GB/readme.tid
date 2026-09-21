@@ -23,9 +23,10 @@ Key capabilities:
 | `output` |`katex` · `text` |`katex` |Rendering backend — KaTeX or plain text |
 | `show` |`result` · `formula` · `full` |`result` |What to display |
 | `mode` |`inline` · `block` |`inline` |KaTeX/plain text display mode |
-| `decimal` |`point` · `comma` |`point` |Decimal separator — `point` (1.5) or `comma` (1,5) |
+| `decimal` |`auto` · `point` · `comma` |`auto` |Decimal separator — `auto` follows the wiki language (comma for fr, de, es…), or force `point` (1.5) / `comma` (1,5) |
 | `notation` |`auto` · `fixed` · `scientific` · `engineering` · `bin` · `oct` · `hex` |`auto` |Numeric output notation |
 | `precision` |positive integer |6 |Display digits — decimal places for `auto`/`fixed`, significant digits for `scientific`/`engineering`; ignored for `bin`/`oct`/`hex` |
+| `trailingZeros` |`yes` · `no` |`no` |Keep trailing zeros up to `precision` digits (`2.00000`) or drop them (`2`). Without this attribute, setting `precision` on the widget itself also keeps them |
 | `calcPrec` |`float` · `64` · `128` · `256` |`float` |Arithmetic precision mode — see warning below |
 | `scope` |tiddler title or `{a:1, b:2}` |— |Variable scope injected into the expression |
 | `silence` |`yes` · `no` |`no` |Suppress expression error display |

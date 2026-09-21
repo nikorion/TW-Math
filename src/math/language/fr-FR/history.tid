@@ -1,6 +1,8 @@
 title: $:/plugins/nikorion/math/language/fr-FR/history
 type: text/vnd.tiddlywiki
 
+* ''0.6.0'' -- 2026.09.21 -- Nouvel attribut et réglage `trailingZeros` (défaut `no`) : les zéros de fin sont retirés (`2` au lieu de `2,00000`). Le réglage global `precision` ne les force plus — un attribut `precision` sur le widget, ou `trailingZeros="yes"`, les conserve.
+* ''0.6.0'' -- 2026.09.21 -- Nouvelle valeur `decimal="auto"`, désormais par défaut : le séparateur décimal suit la langue du wiki (virgule pour fr, de, es…). `point` et `comma` le forcent toujours.
 * ''0.6.0'' -- 2026.08.17 -- Localisation de la licence et de l'historique des versions : `licence.tid` et `history.tid` sont désormais des sélecteurs de langue qui transcluent en mode bloc `language/<lang>/licence` et `language/<lang>/history`, avec repli sur en-GB — même montage que `readme.tid`. Le corps de la licence reste en anglais dans toutes les langues : seul le texte d'origine d'une licence fait foi, seul son encadrement est traduit (introduction, titres, prose des //Composants tiers//).
 * ''0.5.0'' -- 2026.07.02 -- Changement incompatible : widget renommé `<$calc>` → `<$math>`.
 * ''0.1.0'' -- 2026.06.06 -- Bonjour !

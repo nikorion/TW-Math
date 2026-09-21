@@ -3,8 +3,9 @@ title: $:/config/nikorion/math/
 output: katex
 show: result
 mode: inline
-decimal: point
+decimal: auto
 notation: auto
 precision: 6
+trailingZeros: no
 calcPrec: float
 silence: no

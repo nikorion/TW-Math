@@ -108,7 +108,7 @@ module-type: library
   }
 
   // Remove trailing zeros (and trailing dot) from a mantissa string.
-  // Only used when precision is not explicitly set by the user.
+  // Only used when trailing zeros are not kept (keepTrailingZeros is false).
   // "1.4140" → "1.414"  |  "1.0000" → "1"  |  "1." → "1"
   function stripTrailingZerosMantissa(m) {
     if (m.indexOf(".") === -1) return m;
@@ -193,9 +193,9 @@ module-type: library
 
   // Significant-figures variant — used by notation="auto" in decimal range.
   // Consistent with scientific/engineering: precision = significant digits.
-  // When precisionExplicit, sets minimum = maximum so trailing zeros are kept.
-  function intlFormatSigFigs(num, locale, precision, precisionExplicit) {
-    var opts = precisionExplicit
+  // When keepTrailingZeros, sets minimum = maximum so trailing zeros are kept.
+  function intlFormatSigFigs(num, locale, precision, keepTrailingZeros) {
+    var opts = keepTrailingZeros
       ? { minimumSignificantDigits: precision, maximumSignificantDigits: precision }
       : { maximumSignificantDigits: precision };
     return new Intl.NumberFormat(locale, opts).formatToParts(num).map(function(p) {
@@ -223,10 +223,10 @@ module-type: library
   }
 
   // Format a plain number to a plain string (text fallback). 🔢
-  function formatNumber(num, locale, notation, precision, precisionExplicit) {
+  function formatNumber(num, locale, notation, precision, keepTrailingZeros) {
     const abs = Math.abs(num);
     const isFR = isCommaDecimal(locale);
-    function clean(m) { return precisionExplicit ? m : stripTrailingZerosMantissa(m); }
+    function clean(m) { return keepTrailingZeros ? m : stripTrailingZerosMantissa(m); }
 
     switch (notation) {
       case "scientific": {
@@ -247,7 +247,7 @@ module-type: library
           const { mantissa, exp } = splitSci(raw);
           return sciStr(clean(mantissa), exp, isFR);
         }
-        return intlFormatSigFigs(num, locale, precision, precisionExplicit);
+        return intlFormatSigFigs(num, locale, precision, keepTrailingZeros);
 
       case "fixed":
       default:
@@ -292,12 +292,12 @@ module-type: library
 
   // Format a mathjs Unit result to a plain string. 📐
   // Returns null if result is not a Unit.
-  function formatUnit(result, locale, notation, precision, precisionExplicit) {
+  function formatUnit(result, locale, notation, precision, keepTrailingZeros) {
     const parts = splitUnit(result);
     if (!parts)    return null;
     if (parts.raw) return parts.raw;
 
-    const formatted = formatNumber(parts.num, locale, notation, precision, precisionExplicit);
+    const formatted = formatNumber(parts.num, locale, notation, precision, keepTrailingZeros);
     return parts.displayUnit ? `${formatted}\u202F${parts.displayUnit}` : formatted;
   }
 
@@ -305,20 +305,20 @@ module-type: library
   // Formats a mathjs Complex result as "a + bi" (or "a − bi" for negative
   // imaginary parts), applying locale-aware formatting to both parts.
   // Pure real or pure imaginary results are simplified accordingly.
-  function formatComplex(result, locale, notation, precision, precisionExplicit) {
-    const re = formatNumber(result.re, locale, notation, precision, precisionExplicit);
+  function formatComplex(result, locale, notation, precision, keepTrailingZeros) {
+    const re = formatNumber(result.re, locale, notation, precision, keepTrailingZeros);
     const im = Math.abs(result.im);
-    const imStr = formatNumber(im, locale, notation, precision, precisionExplicit);
+    const imStr = formatNumber(im, locale, notation, precision, keepTrailingZeros);
     if (result.im === 0) return re;
     if (result.re === 0) return result.im < 0 ? `\u2212${imStr}i` : `${imStr}i`;
     const sign = result.im < 0 ? " \u2212 " : " + ";
     return `${re}${sign}${imStr}i`;
   }
 
-  function formatComplexKatex(result, locale, notation, precision, precisionExplicit) {
-    const re = numberToKatex(result.re, locale, notation, precision, precisionExplicit);
+  function formatComplexKatex(result, locale, notation, precision, keepTrailingZeros) {
+    const re = numberToKatex(result.re, locale, notation, precision, keepTrailingZeros);
     const im = Math.abs(result.im);
-    const imTex = numberToKatex(im, locale, notation, precision, precisionExplicit);
+    const imTex = numberToKatex(im, locale, notation, precision, keepTrailingZeros);
     if (result.im === 0) return re;
     if (result.re === 0) return result.im < 0 ? `-${imTex}i` : `${imTex}i`;
     const sign = result.im < 0 ? " - " : " + ";
@@ -330,17 +330,17 @@ module-type: library
   // ─────────────────────────────────────────────────────────────────────
   exports.format = function format(result, locale, options = {}) {
     const notation          = options.notation          ?? "auto";
-    const precisionExplicit = options.precisionExplicit ?? false;
+    const keepTrailingZeros = options.keepTrailingZeros ?? false;
 
     // ── Integer-base modes: decimal and precision are bypassed entirely ──
     if (BASE_NOTATIONS.has(notation)) return formatBase(result, notation);
 
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
 
-    if (typeof result === "number")  return formatNumber(result, locale, notation, precision, precisionExplicit);
-    if (result?.isBigNumber)         return formatNumber(result.toNumber(), locale, notation, precision, precisionExplicit);
-    if (result?.isComplex)           return formatComplex(result, locale, notation, precision, precisionExplicit);
-    const unitStr = formatUnit(result, locale, notation, precision, precisionExplicit);
+    if (typeof result === "number")  return formatNumber(result, locale, notation, precision, keepTrailingZeros);
+    if (result?.isBigNumber)         return formatNumber(result.toNumber(), locale, notation, precision, keepTrailingZeros);
+    if (result?.isComplex)           return formatComplex(result, locale, notation, precision, keepTrailingZeros);
+    const unitStr = formatUnit(result, locale, notation, precision, keepTrailingZeros);
     if (unitStr !== null)            return unitStr;
     return math.format(result, { notation: "fixed", precision: 12 }); // fallback
   };
@@ -363,7 +363,7 @@ module-type: library
   // ─────────────────────────────────────────────────────────────────────
   exports.formatResultKatex = function formatResultKatex(result, locale, options = {}) {
     const notation          = options.notation          ?? "auto";
-    const precisionExplicit = options.precisionExplicit ?? false;
+    const keepTrailingZeros = options.keepTrailingZeros ?? false;
 
     // ── Integer-base modes: decimal and precision are bypassed entirely ──
     // formatBase throws a descriptive Error for Unit results.
@@ -375,7 +375,7 @@ module-type: library
     const precision = exports.clampPrecision(options.precision ?? NaN, notation);
 
     // ── Complex numbers ────────────────────────────────────────────────
-    if (result?.isComplex) return formatComplexKatex(result, locale, notation, precision, precisionExplicit);
+    if (result?.isComplex) return formatComplexKatex(result, locale, notation, precision, keepTrailingZeros);
 
     // ── Units: number and unit obtained separately via splitUnit ──────
     // (never re-parse a formatted string — locale separators make that
@@ -383,7 +383,7 @@ module-type: library
     if (result?.units) {
       const parts = splitUnit(result);
       if (parts.raw) return `\\text{${parts.raw}}`;
-      const numTex  = numberToKatex(parts.num, locale, notation, precision, precisionExplicit);
+      const numTex  = numberToKatex(parts.num, locale, notation, precision, keepTrailingZeros);
       const unitTex = parts.displayUnit ? `\\,\\text{${parts.displayUnit}}` : "";
       return numTex + unitTex;
     }
@@ -393,7 +393,7 @@ module-type: library
               : result?.isBigNumber        ? result.toNumber()
               : null;
 
-    if (num !== null) return numberToKatex(num, locale, notation, precision, precisionExplicit);
+    if (num !== null) return numberToKatex(num, locale, notation, precision, keepTrailingZeros);
 
     // ── Fallback: matrices, fractions, etc. ───────────────────────────
     return `\\text{${exports.format(result, locale, options)}}`;
@@ -401,7 +401,7 @@ module-type: library
 
   // Format a plain number to a KaTeX-ready LaTeX string. 🔬
   // Same notation rules as formatNumber, but LaTeX output.
-  function numberToKatex(num, locale, notation, precision, precisionExplicit) {
+  function numberToKatex(num, locale, notation, precision, keepTrailingZeros) {
     const isFR = isCommaDecimal(locale);
     const abs  = Math.abs(num);
     const useSci = notation === "scientific"
@@ -413,7 +413,7 @@ module-type: library
         ? engineeringRaw(num, precision)
         : num.toExponential(precision - 1);
       const { mantissa, exp } = splitSci(raw);
-      const m = precisionExplicit ? mantissa : stripTrailingZerosMantissa(mantissa);
+      const m = keepTrailingZeros ? mantissa : stripTrailingZerosMantissa(mantissa);
       const mantissaTex = isFR ? m.replace(".", "{,}") : m;
       if (exp === 0) return mantissaTex;
       return `${mantissaTex} \\times 10^{${exp}}`;
@@ -423,7 +423,7 @@ module-type: library
     // auto → significant digits (ISO 80000-1); fixed → decimal places.
     const plain = notation === "fixed"
       ? intlFormat(num, locale, precision)
-      : intlFormatSigFigs(num, locale, precision, precisionExplicit);
+      : intlFormatSigFigs(num, locale, precision, keepTrailingZeros);
     return numericToKatex(plain, isFR);
   }
 

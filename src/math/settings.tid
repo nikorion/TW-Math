@@ -78,7 +78,8 @@ tiddler → shadow default) as TW-Hover-Tilt's settings tab.
 <td>`decimal`</td>
 <td>
 <$tiddler tiddler=<<configTidd decimal>>>
-<$radio field="text" value="point" default="point">&nbsp;point</$radio>
+<$radio field="text" value="auto" default="auto">&nbsp;auto</$radio>
+<$radio field="text" value="point">&nbsp;point</$radio>
 <$radio field="text" value="comma">&nbsp;comma</$radio>
 </$tiddler>
 </td>
@@ -109,6 +110,17 @@ tiddler → shadow default) as TW-Hover-Tilt's settings tab.
 </$let>
 </td>
 <td><<resetBtn precision>></td>
+</tr>
+
+<tr>
+<td>`trailingZeros`</td>
+<td>
+<$tiddler tiddler=<<configTidd trailingZeros>>>
+<$radio field="text" value="no" default="no">&nbsp;no</$radio>
+<$radio field="text" value="yes">&nbsp;yes</$radio>
+</$tiddler>
+</td>
+<td><<resetBtn trailingZeros>></td>
 </tr>
 
 <tr>

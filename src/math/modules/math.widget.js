@@ -217,9 +217,10 @@ module-type: widget
     if (scopeTitle && changedTiddlers[scopeTitle]) cache.clear(tid);
 
     var dp = DEFAULTS_PREFIX;
-    if (changedTiddlers[dp+"output"]   || changedTiddlers[dp+"show"]      ||
+    if (changedTiddlers["$:/language"] || changedTiddlers[dp+"output"]   || changedTiddlers[dp+"show"]      ||
         changedTiddlers[dp+"mode"]     || changedTiddlers[dp+"decimal"]   ||
         changedTiddlers[dp+"notation"] || changedTiddlers[dp+"precision"] ||
+        changedTiddlers[dp+"trailingZeros"] ||
         changedTiddlers[dp+"calcPrec"] || changedTiddlers[dp+"silence"]) {
       this.refreshSelf();
       return true;
@@ -228,7 +229,7 @@ module-type: widget
     const changed = this.computeAttributes();
     if (changed["decimal"] || changed["notation"] || changed["show"] ||
         changed["mode"]    || changed["scope"]    || changed["calcPrec"] ||
-        changed["precision"] || changed["output"]) {
+        changed["precision"] || changed["output"] || changed["trailingZeros"]) {
       this.refreshSelf();
       return true;
     }
@@ -286,7 +287,13 @@ module-type: widget
     const useKatex  = output === "katex" && renderer.isKatexAvailable(this);
     const calcPrec  = getAttr(this, "calcPrec", "float");
     const math      = mathInstance.getInstance(calcPrec);
-    const decimal = getAttr(this, "decimal", "point");
+    // decimal="auto" (default): comma when the active wiki language uses one (fr, de, es…), point otherwise.
+    let decimal = getAttr(this, "decimal", "auto");
+    if (decimal === "auto") {
+      let comma = false;
+      try { comma = new Intl.NumberFormat(lang.getLangCode()).format(1.1).includes(","); } catch (_e) { comma = false; }
+      decimal = comma ? "comma" : "point";
+    }
     const locale  = decimal === "comma" ? "fr-FR" : "en-US";
 
     try {
@@ -320,9 +327,16 @@ module-type: widget
         precisionRaw = this.wiki.getTiddlerText(DEFAULTS_PREFIX + "precision") || "";
       }
       const precision         = format.clampPrecision(parseInt(precisionRaw, 10), notation);
-      // Track whether the user explicitly set precision: only then do we
-      // keep trailing zeros (ISO 80000-1 — zeros signal known accuracy).
-      const precisionExplicit = precisionRaw !== "";
+      // Trailing zeros are kept (ISO 80000-1 — zeros signal known accuracy) when the
+      // `trailingZeros` attribute says "yes", or — without that attribute — when
+      // `precision` is set on the widget itself, or the global `trailingZeros` is "yes".
+      // The global `precision` alone only caps the digits: it does not force zeros.
+      const trailingAttr      = this.getAttribute("trailingZeros");
+      const precisionAttr     = this.getAttribute("precision");
+      const keepTrailingZeros = trailingAttr !== undefined
+        ? trailingAttr === "yes"
+        : (precisionAttr !== undefined && precisionAttr !== "")
+          || (this.wiki.getTiddlerText(DEFAULTS_PREFIX + "trailingZeros") || "no") === "yes";
       const tid       = this.getVariable("currentTiddler");
 
       const scopeAttr = this.getAttribute("scope", "");
@@ -347,11 +361,11 @@ module-type: widget
       }
 
       if (useKatex) {
-        const resultTex = format.formatResultKatex(result, locale, { notation, precision, precisionExplicit }); // 7a. format katex
+        const resultTex = format.formatResultKatex(result, locale, { notation, precision, keepTrailingZeros }); // 7a. format katex
         if (effectiveShow === "full") return { ok: true, useKatex: true, tex: `${formulaTex} = ${resultTex}` };
         return { ok: true, useKatex: true, tex: resultTex };
       } else {
-        const resultText  = format.format(result, locale, { notation, precision, precisionExplicit }); // 7b. format text
+        const resultText  = format.format(result, locale, { notation, precision, keepTrailingZeros }); // 7b. format text
         const formulaText = prettyprint.prettyprint(normalized, locale);             // 7b. prettyprint
         if (effectiveShow === "full") return { ok: true, useKatex: false, text: `${formulaText} = ${resultText}` };
         return { ok: true, useKatex: false, text: resultText };
