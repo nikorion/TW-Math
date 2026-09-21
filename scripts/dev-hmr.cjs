@@ -99,6 +99,9 @@ const sse = http.createServer((req, res) => {
     "Access-Control-Allow-Origin": "*",
   });
   res.write("retry: 1000\n\n");
+  // First message on every connection: which dev wiki this stream belongs to (its TW port),
+  // so a browser tab of another wiki that wandered onto this SSE port can ignore it.
+  res.write("data: " + JSON.stringify({ type: "hello", port: TW_PORT }) + "\n\n");
   clients.add(res);
   req.on("close", () => clients.delete(res));
 });

@@ -14,9 +14,18 @@ exports.startup = function () {
   // free one if it was busy) and published via $:/config/dev/hmr-port.
   var port = $tw.wiki.getTiddlerText("$:/config/dev/hmr-port", "35730").trim();
   var source = new EventSource("http://localhost:" + port + "/hmr");
+  // Several dev wikis can be open at once: obey a stream only after its hello names this wiki's own
+  // server port - never another wiki's pushes (they would be saved to this wiki's disk by the syncer).
+  var accepted = false;
   source.onmessage = function (event) {
     var msg;
     try { msg = JSON.parse(event.data); } catch (e) { return; }
+    if (msg.type === "hello") {
+      accepted = String(msg.port) === String(window.location.port);
+      if (!accepted) console.warn("[hmr] ignoring the stream of the dev wiki on port " + msg.port);
+      return;
+    }
+    if (!accepted) return;
     if (msg.type === "reload") {
       window.location.reload();
     } else if (msg.type === "tiddlers" && msg.tiddlers) {
