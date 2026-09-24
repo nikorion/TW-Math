@@ -27,7 +27,7 @@ const { spawn } = require("child_process");
 // The ports of the previous run are remembered in a git-ignored file and tried
 // first, so a plugin keeps the same URL from one `pnpm dev` to the next unless
 // something else has taken the port meanwhile (then a random one is drawn and saved).
-const PORTS_FILE = path.resolve(".dev-ports.json");
+const PORTS_FILE = path.join(__dirname, "dev-ports.json");
 let savedPorts = {};
 try { savedPorts = JSON.parse(fs.readFileSync(PORTS_FILE, "utf8")); } catch (e) { /* first run */ }
 const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || Number(savedPorts.tw) || 0;
