@@ -2,10 +2,9 @@
 "use strict";
 
 // Orchestrates `pnpm dev`. Resolves both dev ports once — the TiddlyWiki HTTP
-// port (prefers 8080) and the content-HMR SSE port (prefers 35730) — falling
-// back to a random free port whenever the preferred one is already taken (e.g. a
-// parallel `pnpm dev` for another nikorion plugin): move aside rather than kill
-// the occupant. The chosen ports are shared with the two long-lived children via
+// port and the content-HMR SSE port — as random free ports (or the ones asked for
+// through TW_PORT / HMR_SSE_PORT, falling back to a random one if taken), so any
+// number of nikorion dev servers can run in parallel. The chosen ports are shared with the two long-lived children via
 // env vars (TW_PORT, HMR_SSE_PORT):
 //   • nodemon      → reboots TW on module / plugin.info changes (nodemon.json
 //                    supplies watch/ext; the port is injected here via --exec)
@@ -22,8 +21,11 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || 8080;
-const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || 35730;
+// No fixed default: both ports are random free ones (so every plugin's dev
+// server can run at once, and none squats 8080, which another service uses).
+// Set TW_PORT / HMR_SSE_PORT to ask for a specific port instead.
+const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || 0;
+const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || 0;
 const PORT_TIDDLER = path.resolve("wiki/tiddlers/$__dev-hmr-port.tid");
 
 // TiddlyWiki's `--listen` defaults to host 127.0.0.1, so probe that same
@@ -32,38 +34,41 @@ const PORT_TIDDLER = path.resolve("wiki/tiddlers/$__dev-hmr-port.tid");
 // server was reported "free" and TW then crashed with EADDRINUSE instead of
 // moving aside.
 const HOST = "127.0.0.1";
+// The HMR SSE server (dev-hmr.cjs) listens with no host, i.e. dual-stack `::` — probe it
+// the same way (host undefined), otherwise a 127.0.0.1 probe reports a port held on
+// `::` as free and a parallel `pnpm dev` loses its HMR.
 
 // Can we bind this port right now? (briefly opens then closes a listener)
-function isFree(port) {
+function isFree(port, host) {
   return new Promise((resolve) => {
     const srv = net.createServer();
     srv.once("error", () => resolve(false));
     srv.once("listening", () => srv.close(() => resolve(true)));
-    srv.listen(port, HOST);
+    srv.listen(port, host);
   });
 }
 
 // Ask the OS for any free ephemeral port (listen on 0 → it assigns one).
-function randomFreePort() {
+function randomFreePort(host) {
   return new Promise((resolve, reject) => {
     const srv = net.createServer();
     srv.once("error", reject);
-    srv.listen(0, HOST, () => {
+    srv.listen(0, host, () => {
       const { port } = srv.address();
       srv.close(() => resolve(port));
     });
   });
 }
 
-async function resolvePort(preferred, label) {
-  if (await isFree(preferred)) return preferred;
-  const port = await randomFreePort();
-  process.stdout.write(`[dev] ${label} port ${preferred} busy → using free port ${port}\n`);
+async function resolvePort(preferred, label, host) {
+  if (preferred && (await isFree(preferred, host))) return preferred;
+  const port = await randomFreePort(host);
+  if (preferred) process.stdout.write(`[dev] ${label} port ${preferred} busy → using free port ${port}\n`);
   return port;
 }
 
 (async () => {
-  const twPort = await resolvePort(PREFERRED_TW_PORT, "TiddlyWiki");
+  const twPort = await resolvePort(PREFERRED_TW_PORT, "TiddlyWiki", HOST);
   const ssePort = await resolvePort(PREFERRED_SSE_PORT, "HMR SSE");
 
   // Publish the SSE port to the browser client through a git-ignored tiddler,
