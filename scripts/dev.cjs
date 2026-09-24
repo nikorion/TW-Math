@@ -24,8 +24,14 @@ const { spawn } = require("child_process");
 // No fixed default: both ports are random free ones (so every plugin's dev
 // server can run at once, and none squats 8080, which another service uses).
 // Set TW_PORT / HMR_SSE_PORT to ask for a specific port instead.
-const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || 0;
-const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || 0;
+// The ports of the previous run are remembered in a git-ignored file and tried
+// first, so a plugin keeps the same URL from one `pnpm dev` to the next unless
+// something else has taken the port meanwhile (then a random one is drawn and saved).
+const PORTS_FILE = path.resolve(".dev-ports.json");
+let savedPorts = {};
+try { savedPorts = JSON.parse(fs.readFileSync(PORTS_FILE, "utf8")); } catch (e) { /* first run */ }
+const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || Number(savedPorts.tw) || 0;
+const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || Number(savedPorts.sse) || 0;
 const PORT_TIDDLER = path.resolve("wiki/tiddlers/system/$__config_dev_hmr-port.tid");
 
 // TiddlyWiki's `--listen` defaults to host 127.0.0.1, so probe that same
@@ -70,6 +76,8 @@ async function resolvePort(preferred, label, host) {
 (async () => {
   const twPort = await resolvePort(PREFERRED_TW_PORT, "TiddlyWiki", HOST);
   const ssePort = await resolvePort(PREFERRED_SSE_PORT, "HMR SSE");
+
+  fs.writeFileSync(PORTS_FILE, JSON.stringify({ tw: twPort, sse: ssePort }) + "\n");
 
   // Publish the SSE port to the browser client through a git-ignored tiddler,
   // written before TW boots so it is part of the served store.
