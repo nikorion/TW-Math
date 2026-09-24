@@ -26,7 +26,7 @@ const { spawn } = require("child_process");
 // Set TW_PORT / HMR_SSE_PORT to ask for a specific port instead.
 const PREFERRED_TW_PORT = Number(process.env.TW_PORT) || 0;
 const PREFERRED_SSE_PORT = Number(process.env.HMR_SSE_PORT) || 0;
-const PORT_TIDDLER = path.resolve("wiki/tiddlers/$__dev-hmr-port.tid");
+const PORT_TIDDLER = path.resolve("wiki/tiddlers/system/$__config_dev_hmr-port.tid");
 
 // TiddlyWiki's `--listen` defaults to host 127.0.0.1, so probe that same
 // interface. Binding 0.0.0.0 here gave false positives on Windows: it succeeds

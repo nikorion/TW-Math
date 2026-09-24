@@ -1,5 +1,4 @@
 title: $:/config/FileSystemPaths
 type: text/vnd.tiddlywiki
 
-[match[$:/config/dev/hmr-port]then[$__dev-hmr-port]]
 [prefix[$:/]search-replace:g:regexp[/|\\],[_]addprefix[system/]]

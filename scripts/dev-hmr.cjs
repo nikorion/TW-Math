@@ -45,7 +45,7 @@ const WATCH_DIRS = [path.resolve("src/math"), path.resolve("wiki/tiddlers")];
 // Transient/generated wiki tiddlers (see .gitignore): excluded from
 // $:/config/SyncFilter so they shouldn't normally reappear on disk, but skip
 // them defensively — they carry no content worth pushing.
-const IGNORED_BASENAME = /^\$__(StoryList|HistoryList|Import|dev-hmr-port)\b/;
+const IGNORED_BASENAME = /^\$__(StoryList|HistoryList|Import|config_dev_hmr-port)\b/;
 // Port TW listens on — injected by scripts/dev.cjs (resolved to 8080 or a random
 // free port); 8080 is the standalone fallback. Only used by the readiness probe.
 const TW_PORT = Number(process.env.TW_PORT) || 8080;
