@@ -5,10 +5,14 @@
     "tiddlywiki/tiddlyweb",
     "tiddlywiki/katex",
     "tiddlywiki/highlight",
-    "nikorion/math"
+    "nikorion/math",
+    "nikorion/detect-language"
   ],
   "themes": [
     "tiddlywiki/vanilla"
+  ],
+  "languages": [
+    "fr-FR"
   ],
   "pluginPath": "../src",
   "config": {
