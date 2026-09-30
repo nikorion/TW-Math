@@ -45,7 +45,11 @@ const WATCH_DIRS = [path.resolve("src/math"), path.resolve("wiki/tiddlers")];
 // Transient/generated wiki tiddlers (see .gitignore): excluded from
 // $:/config/SyncFilter so they shouldn't normally reappear on disk, but skip
 // them defensively — they carry no content worth pushing.
-const IGNORED_BASENAME = /^\$__(StoryList|HistoryList|Import|config_dev_hmr-port)\b/;
+// Drafts too: the syncer writes the draft being edited to disk about every second,
+// and pushing that write back to the tab would only echo the tab's own draft — at
+// worst overwriting a field changed in between. Drafts are only ever edited in the
+// browser, whose own saves reach the disk through the syncer, not through here.
+const IGNORED_BASENAME = /^(\$__(StoryList|HistoryList|Import|config_dev_hmr-port)\b|Draft of ')/;
 // Port TW listens on — injected by scripts/dev.cjs (resolved to 8080 or a random
 // free port); 8080 is the standalone fallback. Only used by the readiness probe.
 const TW_PORT = Number(process.env.TW_PORT) || 8080;
@@ -234,11 +238,56 @@ async function handleReboot() {
 let debounce = null;
 const pending = new Set(); // absolute paths, deduped across both watch roots
 
+// ── content filter: react to real content changes only ────────────────
+// fs.watch on Windows also fires on metadata-only changes: the last-access time
+// NTFS updates when a file is merely *read* (a build, a grep, git computing a diff),
+// attributes… A read `.js`/`plugin.info` then passed for a module change: the
+// reboot handler waited for a TW restart that never came, then told the browser to
+// reload — onto the server's boot-time state, silently dropping every hot push since
+// (seen 2026-09-30). Each file's content hash is kept, from a startup scan; an event
+// whose file still has the same content is ignored. A deleted file (no content)
+// always counts as a change.
+const crypto = require("crypto");
+const knownHashes = new Map(); // absolute path → sha1 of its content
+function hashOf(abs) {
+  try {
+    return crypto.createHash("sha1").update(fs.readFileSync(abs)).digest("hex");
+  } catch (err) {
+    return null; // deleted, or a directory
+  }
+}
+function indexDir(dir) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (err) {
+    return;
+  }
+  for (const entry of entries) {
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) indexDir(abs);
+    else if (entry.isFile()) knownHashes.set(abs, hashOf(abs));
+  }
+}
+for (const dir of WATCH_DIRS) indexDir(dir);
+function contentChanged(abs) {
+  const hash = hashOf(abs);
+  if (hash === null) {
+    if (fs.existsSync(abs)) return false; // a directory event
+    return knownHashes.delete(abs) || true; // deleted
+  }
+  if (knownHashes.get(abs) === hash) return false;
+  knownHashes.set(abs, hash);
+  return true;
+}
+
 for (const dir of WATCH_DIRS) {
   fs.watch(dir, { recursive: true }, (_event, filename) => {
     if (!filename) return;
     if (IGNORED_BASENAME.test(path.basename(filename))) return;
-    pending.add(path.join(dir, filename));
+    const abs = path.join(dir, filename);
+    if (!contentChanged(abs)) return;
+    pending.add(abs);
     clearTimeout(debounce);
     debounce = setTimeout(flush, 100);
   });
