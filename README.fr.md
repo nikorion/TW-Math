@@ -70,7 +70,7 @@ en ligne, avec :
 - une validation statique des expressions avec des messages d'erreur explicites
 - un rendu KaTeX par défaut quand le plugin est installé ; repli en douceur sur du texte brut
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -171,7 +171,7 @@ KaTeX en assure le rendu. Avec `output="text"`, un formateur la convertit en tex
 
 Avant toute évaluation, les identifiants inconnus sont détectés, avec une suggestion « did you mean? » fondée sur la distance de Levenshtein (ex. `sqt` → `did you mean "sqrt"?`). Les erreurs de syntaxe de mathjs sont reformulées avec leur position (`Syntax error at position 4, near ")"`). Tous les messages d'erreur sont différés de 200 ms pour éviter le clignotement pendant la frappe.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -206,7 +206,7 @@ Le délai de 200 ms couvre déjà l'invalidité passagère pendant la frappe.
 stabilisée — et où ne rien afficher vaut mieux qu'un message d'erreur
 permanent.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -311,7 +311,7 @@ La notation standard `5e9`, `1.5e-3`, `2.5e+6` est entièrement prise en charge.
 
 > N'écrivez **pas** `5 * e9` — cela signifie 5 fois un symbole `e9` non défini.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -328,7 +328,7 @@ de noms de variable sans être écrasées silencieusement :
 Définir `e` ou `i` dans le `scope` masque ces constantes pour toute
 l'expression. Utiliser plutôt des noms sans ambiguïté : `euler`, `base`, `idx`, `imag`, etc.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -407,7 +407,7 @@ interne par decimal.js. Elles lèvent `[DecimalError] Precision limit exceeded` 
 partir d'une précision **≥ 510**. Le widget plafonne les options BigNumber à 256,
 bien en deçà de cette limite.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -419,7 +419,7 @@ bien en deçà de cette limite.
 
 > KaTeX (`$:/plugins/tiddlywiki/katex`) est facultatif — le widget se replie automatiquement sur du texte brut en son absence.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -428,7 +428,7 @@ bien en deçà de cette limite.
 - GitHub : <https://github.com/nikorion/TW-Math>
 - Démo en ligne : bientôt
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -440,7 +440,7 @@ bien en deçà de cette limite.
 - Conçu pour les wikis en un seul fichier
 - Clé de cache : `[tiddler-title, normalized-expr, calcPrec, scope-attr]`
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -451,7 +451,7 @@ bien en deçà de cette limite.
 - Le bac à sable est heuristique, ce n'est pas une VM sécurisée
 - La sortie KaTeX couvre les cas courants ; le LaTeX avancé (`\color`, `\align`, `\underbrace`) exige d'écrire du LaTeX brut via `<$katex />`
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -462,7 +462,7 @@ bien en deçà de cette limite.
 - bac à sable plus strict
 - outils de profilage des performances
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -509,7 +509,7 @@ le nombre de chiffres affichés.
 Première version publique. Met en place la structure du plugin et la chaîne
 d'évaluation. Toutes les fonctionnalités sont expérimentales et sujettes à des changements incompatibles.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -528,7 +528,7 @@ voir les conditions d'utilisation de SVG Repo.
 Développé avec l'aide d'OpenAI ChatGPT et d'Anthropic Claude pour la revue de code,
 le refactoring et la documentation.
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")
 
 ---
 
@@ -537,4 +537,4 @@ le refactoring et la documentation.
 Licence MIT — voir `LICENSE`  
 Inclut Math.js (Apache 2.0)
 
-[↑ Retour au sommaire](#sommaire)
+[↑](#sommaire "Retour au sommaire")

@@ -70,7 +70,7 @@ evaluation with:
 - static expression validation with friendly error messages
 - KaTeX rendering by default when plugin is installed; graceful plain-text fallback
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -171,7 +171,7 @@ KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable
 
 Before any evaluation, unknown identifiers are caught with a Levenshtein "did you mean?" suggestion (e.g. `sqt` → `did you mean "sqrt"?`). Syntax errors from mathjs are reformatted with position context (`Syntax error at position 4, near ")"`). All error messages are delayed 200 ms to suppress flicker while typing.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -206,7 +206,7 @@ The 200 ms debounce already covers momentary invalidity while typing.
 stabilizing — and showing nothing is a better experience than a permanent
 error message.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -311,7 +311,7 @@ Standard `5e9`, `1.5e-3`, `2.5e+6` notation is fully supported.
 
 > Do **not** write `5 * e9` — that means 5 times an undefined symbol `e9`.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -328,7 +328,7 @@ names without silently overriding them:
 Defining `e` or `i` in the `scope` shadows these constants for the entire
 expression.  Use unambiguous names instead: `euler`, `base`, `idx`, `imag`, etc.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -407,7 +407,7 @@ decimal.js internally.  They throw `[DecimalError] Precision limit exceeded` at
 precision **≥ 510**.  The widget caps BigNumber options at 256, which is safely
 within this limit.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -419,7 +419,7 @@ within this limit.
 
 > KaTeX (`$:/plugins/tiddlywiki/katex`) is optional — the widget falls back to plain text automatically if absent.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -428,7 +428,7 @@ within this limit.
 - GitHub: <https://github.com/nikorion/TW-Math>
 - Live demo: soon
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -440,7 +440,7 @@ within this limit.
 - Designed for single-file wikis
 - Cache key: `[tiddler-title, normalized-expr, calcPrec, scope-attr]`
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -451,7 +451,7 @@ within this limit.
 - Sandbox is heuristic, not a secure VM
 - KaTeX output covers common cases; advanced LaTeX (`\color`, `\align`, `\underbrace`) requires writing raw LaTeX via `<$katex />`
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -462,7 +462,7 @@ within this limit.
 - stricter sandbox
 - performance profiling tools
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -510,7 +510,7 @@ the display digit count.
 Initial public release.  Establishes the plugin structure and evaluation
 pipeline.  All features are experimental and subject to breaking changes.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -529,7 +529,7 @@ see SVG Repo terms of use.
 Developed with assistance from OpenAI ChatGPT and Anthropic Claude for code
 review, refactoring, and documentation.
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
 
 ---
 
@@ -538,4 +538,4 @@ review, refactoring, and documentation.
 MIT License — see `LICENSE`  
 Includes Math.js (Apache 2.0)
 
-[↑ Back to contents](#contents)
+[↑](#contents "Back to contents")
