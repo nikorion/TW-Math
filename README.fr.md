@@ -22,14 +22,14 @@ en ligne, avec :
 
 ## Fonctionnalités
 
-### Moteur Math.js
+**Moteur Math.js**
 
 - arithmétique et algèbre
 - fonctions : `sin`, `cos`, `sqrt`, `log`, `factorial`, `gcd`, et [toutes les autres](https://mathjs.org/docs/reference/functions.html)
 - unités avec simplification automatique et conversion explicite par `to`
 - nombres complexes (`2 + 3i`, `sqrt(-1)` → affichés normalement)
 
-### Opérateurs et symboles Unicode
+**Opérateurs et symboles Unicode**
 
 | Symbole | Signification | Normalisé en |
 |---|---|---|
@@ -49,7 +49,7 @@ en ligne, avec :
 | `x⁰`–`x⁹` | chiffres en exposant (0–9) | `x^0`–`x^9` |
 | `½` `¼` `¾` … | fractions usuelles (½ ⅓ ⅔ ¼ ¾ ⅕–⅘ ⅙ ⅚ ⅛–⅞) | `(1/2)` etc. |
 
-### Modes de notation
+**Modes de notation**
 
 ```
 <$math notation="auto">0.00000012</$math>       <!-- passe en scientifique -->
@@ -68,7 +68,7 @@ en ligne, avec :
 | `oct` | octal, préfixé `0o` |
 | `hex` | hexadécimal, préfixé `0x` |
 
-### Séparateur décimal
+**Séparateur décimal**
 
 L'**espace fine insécable (U+202F, NNBSP)** sert toujours de séparateur de milliers,
 conformément à l'ISO 80000-1. Seul le séparateur décimal change :
@@ -80,7 +80,7 @@ conformément à l'ISO 80000-1. Seul le séparateur décimal change :
 
 Les exposants de la notation scientifique utilisent des exposants Unicode : `1.23 × 10⁻⁶` (et non `10^-6`).
 
-### Rendu des formules
+**Rendu des formules**
 
 `show="formula"` et `show="full"` composent l'expression. Avec `output="katex"` (défaut),
 KaTeX en assure le rendu. Avec `output="text"`, un formateur la convertit en texte brut lisible :
@@ -107,13 +107,13 @@ KaTeX en assure le rendu. Avec `output="text"`, un formateur la convertit en tex
 > `show="formula"` et `show="full"` se replient automatiquement sur `show="result"`
 > (la formule est la valeur elle-même — il n'y a rien de distinct à montrer).
 
-### Performances
+**Performances**
 
 - cache LRU (500 entrées) — des expressions identiques d'un cycle de rafraîchissement à l'autre ne coûtent rien
 - invalidation ciblée du cache quand un tiddler référencé change
 - sortie anticipée au rendu — pas de nouveau rendu quand le texte de l'expression n'a pas changé
 
-### Validation statique
+**Validation statique**
 
 Avant toute évaluation, les identifiants inconnus sont détectés, avec une suggestion « did you mean? » fondée sur la distance de Levenshtein (ex. `sqt` → `did you mean "sqrt"?`). Les erreurs de syntaxe de mathjs sont reformulées avec leur position (`Syntax error at position 4, near ")"`). Tous les messages d'erreur sont différés de 200 ms pour éviter le clignotement pendant la frappe.
 
@@ -131,7 +131,7 @@ Avant toute évaluation, les identifiants inconnus sont détectés, avec une sug
 | `scope` | titre de tiddler ou `{a:1, b:2}` | — | Portée de variables injectée dans l'expression |
 | `silence` | `yes` · `no` | `no` | Masquer l'affichage des erreurs de l'expression |
 
-#### Quand `silence="yes"` est-il utile ?
+**Quand `silence="yes"` est-il utile ?**
 
 `silence="yes"` masque les erreurs qui viennent de *l'expression elle-même*.
 L'utiliser quand une expression est volontairement incomplète ou invalide selon les cas :
@@ -150,19 +150,19 @@ permanent.
 
 ## Utilisation
 
-### Base
+**Base**
 
 ```
 <$math>1 + 2 * 3</$math>
 ```
 
-### Séparateur décimal
+**Séparateur décimal**
 
 ```
 <$math decimal="comma">1234567.89</$math>
 ```
 
-### Modes d'affichage
+**Modes d'affichage**
 
 ```
 <$math show="result">sqrt(2)</$math>
@@ -170,13 +170,13 @@ permanent.
 <$math show="full" mode="block">sqrt(x^2 + 1)</$math>
 ```
 
-### Forcer un résultat en texte brut
+**Forcer un résultat en texte brut**
 
 ```
 <$math output="text" show="formula">pi * r^2</$math>
 ```
 
-### Notation
+**Notation**
 
 ```
 <$math notation="scientific">0.00000012</$math>
@@ -189,7 +189,7 @@ permanent.
 
 Pour `bin`, `oct` et `hex` : `decimal` et `precision` sont ignorés. Les valeurs non entières sont tronquées sans avertissement (`3.7` → `3`). Un résultat avec unité produit une erreur — utiliser `number(expr, unit)` pour extraire d'abord la valeur numérique.
 
-### Masquer les erreurs
+**Masquer les erreurs**
 
 ```
 <$math silence="yes">bad expression</$math>
@@ -197,7 +197,7 @@ Pour `bin`, `oct` et `hex` : `decimal` et `precision` sont ignorés. Les valeurs
 
 N'affiche rien en cas d'erreur au lieu d'un message d'erreur.
 
-### Précision de calcul
+**Précision de calcul**
 
 ```
 <$math calcPrec="64">1e13 + 1.23456789 - 1e13</$math>
@@ -206,9 +206,9 @@ N'affiche rien en cas d'erreur au lieu d'un message d'erreur.
 Voir la section [Précision et performances](#précision-et-performances) pour
 savoir quand utiliser chaque mode.
 
-### Portée des variables — attribut `scope`
+**Portée des variables — attribut `scope`**
 
-#### Mode tiddler
+**Mode tiddler**
 
 ```
 <$math scope="MyVars">pi * r^2</$math>
@@ -222,7 +222,7 @@ h: 10
 vol: pi * r^2 * h
 ```
 
-#### Mode en ligne
+**Mode en ligne**
 
 ```
 <$math scope="{r: 3, h: 10}">pi * r^2 * h</$math>
@@ -234,7 +234,7 @@ Règles pour les clés :
 - pas de guillemets autour des clés : `{a:1}` et non `{"a":1}`
 - `math.unit(5 cm)` est mis entre guillemets automatiquement — l'écrire sans guillemets intérieurs
 
-### Unités
+**Unités**
 
 ```
 <$math>9.81 m/s^2 * 80 kg</$math>
@@ -243,7 +243,7 @@ Règles pour les clés :
 <$math>5 cm + 2 m to inch</$math>
 ```
 
-### Saisie en notation scientifique
+**Saisie en notation scientifique**
 
 La notation standard `5e9`, `1.5e-3`, `2.5e+6` est entièrement prise en charge.
 
@@ -264,7 +264,7 @@ l'expression. Utiliser plutôt des noms sans ambiguïté : `euler`, `base`, `idx
 
 ## Précision et performances
 
-### Par défaut : float
+**Par défaut : float**
 
 Par défaut, le widget utilise le `float64` IEEE 754 natif — le type `Number`
 standard de JavaScript (~16 chiffres significatifs). Le formateur affiche par
@@ -278,7 +278,7 @@ masquer la plupart des artefacts du calcul flottant visibles à l'œil :
 
 Utiliser float pour la grande majorité des expressions.
 
-### Quand utiliser BigNumber
+**Quand utiliser BigNumber**
 
 Ne passer à un mode de précision BigNumber que lorsque float produit un
 **résultat visiblement faux** que le plafond de précision par défaut ne peut pas corriger :
@@ -289,7 +289,7 @@ Ne passer à un mode de précision BigNumber que lorsque float produit un
 | Résidu de soustraction | `0.3 - 0.1 - 0.1 - 0.1` | `-2.78e-17` ❌ | `0` ✅ |
 | Entier > MAX_SAFE_INTEGER | `9007199254740993` | `9007199254740992` ❌ | `9007199254740993` ✅ |
 
-### Modes de précision de calcul
+**Modes de précision de calcul**
 
 | `calcPrec` | Moteur | Chiffres significatifs | Coût typique par rapport à float |
 |---|---|---|---|
@@ -298,7 +298,7 @@ Ne passer à un mode de précision BigNumber que lorsque float produit un
 | `128` | BigNumber | 128 | ~5–6× plus lent |
 | `256` | BigNumber | 256 | ~8–10× plus lent |
 
-### Précision affichée et précision interne
+**Précision affichée et précision interne**
 
 `calcPrec` règle la précision interne. `precision` règle les chiffres visibles.
 Augmenter `calcPrec` ne produit **pas** davantage de chiffres visibles — BigNumber
@@ -308,7 +308,7 @@ ne fait que réduire les erreurs d'arrondi dans les étapes intermédiaires.
 > `calcPrec="64"` signifie 64 *chiffres décimaux significatifs* (~213 bits), et non 64 bits.  
 > `calcPrec="128"` correspond à ~425 bits. Ne pas confondre avec les largeurs en bits de l'IEEE 754.
 
-### Précision d'affichage par défaut
+**Précision d'affichage par défaut**
 
 | Notation | Défaut du plugin | Plage usuelle en pratique |
 |---|---|---|
@@ -318,7 +318,7 @@ ne fait que réduire les erreurs d'arrondi dans les étapes intermédiaires.
 | `engineering` | 6 chiffres sig. | 3–4 (les composants physiques en exigent rarement plus) |
 | `bin` · `oct` · `hex` | — | `precision` ignoré — math.js produit le nombre exact de chiffres |
 
-### Seuils de performance (mesurés sur V8/Node.js)
+**Seuils de performance (mesurés sur V8/Node.js)**
 
 | `calcPrec` | µs/éval. (arithmétique) | µs/éval. (`sin`/`cos`) | Widgets avant saccades |
 |---|---|---|---|
@@ -330,7 +330,7 @@ ne fait que réduire les erreurs d'arrondi dans les étapes intermédiaires.
 Grâce au cache LRU, ces coûts ne s'appliquent qu'à la première évaluation de
 chaque expression distincte, à chaque modification de tiddler.
 
-### Limite stricte : fonctions trigonométriques en haute précision
+**Limite stricte : fonctions trigonométriques en haute précision**
 
 `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh` sont calculées en
 interne par decimal.js. Elles lèvent `[DecimalError] Precision limit exceeded` à
@@ -374,12 +374,12 @@ bien en deçà de cette limite.
 
 ## Historique des versions
 
-### v0.5.0 — 2026-07-02
+**v0.5.0 — 2026-07-02**
 
 **Changement incompatible :** le widget s'appelle désormais `<$math>` au lieu de `<$calc>`. Mettre à jour
 tout le wikitext qui utilise le plugin.
 
-### v0.4.0 — 2026-06-15
+**v0.4.0 — 2026-06-15**
 
 Passe de qualité sur `output=text`. Tous les modes utilisent désormais la NNBSP (U+202F) comme séparateur
 de milliers (l'anglais utilisait auparavant des virgules — non standard).
@@ -390,7 +390,7 @@ corps de l'expression est un simple littéral numérique, `show=formula` / `show
 se replient automatiquement sur `show=result`. `mode=block` est désormais pris en compte pour
 `output=text` (auparavant ignoré) — le résultat est enveloppé dans un `<div>` bloc centré.
 
-### v0.3.0 — 2026-06-13
+**v0.3.0 — 2026-06-13**
 
 Nouvel attribut `output` (`katex` par défaut / `text`). KaTeX devient actif par défaut
 plutôt que sur demande : actif dès que le plugin est installé, avec sinon un repli en douceur
@@ -401,7 +401,7 @@ produire une erreur. Les températures s'affichent avec les symboles `°C` / `°
 La notation en base entière (`bin`/`oct`/`hex`) tronque désormais correctement les valeurs non entières.
 La virgule à l'anglaise est acceptée comme séparateur de milliers en saisie (`1,000,000`).
 
-### v0.2.0 — 2026-06-12
+**v0.2.0 — 2026-06-12**
 
 API simplifiée : `show` et `mode` remplacent `render` ; la saisie est désormais en anglais uniquement ; tout
 résultat passe par KaTeX (avec repli sur du texte brut). Le nouveau mode `show="full"`
@@ -410,7 +410,7 @@ affiche ensemble la formule et le résultat. `notation` remplace `scientific` (e
 `calcPrec` remplace `precision` pour la précision de calcul ; `precision` désigne désormais
 le nombre de chiffres affichés.
 
-### v0.1.0 — 2026-06-06
+**v0.1.0 — 2026-06-06**
 
 Première version publique. Met en place la structure du plugin et la chaîne
 d'évaluation. Toutes les fonctionnalités sont expérimentales et sujettes à des changements incompatibles.

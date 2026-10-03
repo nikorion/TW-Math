@@ -22,14 +22,14 @@ evaluation with:
 
 ## Features
 
-### Math.js engine
+**Math.js engine**
 
 - arithmetic and algebra
 - functions: `sin`, `cos`, `sqrt`, `log`, `factorial`, `gcd`, and [all others](https://mathjs.org/docs/reference/functions.html)
 - units with auto-simplification and explicit `to` conversion
 - complex numbers (`2 + 3i`, `sqrt(-1)` → displayed normally)
 
-### Unicode operators and symbols
+**Unicode operators and symbols**
 
 | Symbol | Meaning | Normalised to |
 |---|---|---|
@@ -49,7 +49,7 @@ evaluation with:
 | `x⁰`–`x⁹` | superscript digits (0–9) | `x^0`–`x^9` |
 | `½` `¼` `¾` … | vulgar fractions (½ ⅓ ⅔ ¼ ¾ ⅕–⅘ ⅙ ⅚ ⅛–⅞) | `(1/2)` etc. |
 
-### Notation modes
+**Notation modes**
 
 ```
 <$math notation="auto">0.00000012</$math>       <!-- switches to scientific -->
@@ -68,7 +68,7 @@ evaluation with:
 | `oct` | octal, prefixed `0o` |
 | `hex` | hexadecimal, prefixed `0x` |
 
-### Decimal separator
+**Decimal separator**
 
 **NNBSP (U+202F, narrow no-break space)** is always used as thousands separator
 per ISO 80000-1.  Only the decimal separator changes:
@@ -80,7 +80,7 @@ per ISO 80000-1.  Only the decimal separator changes:
 
 Scientific notation exponents use Unicode superscripts: `1.23 × 10⁻⁶` (not `10^-6`).
 
-### Formula rendering
+**Formula rendering**
 
 `show="formula"` and `show="full"` typeset the expression. With `output="katex"` (default),
 KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable plain text:
@@ -107,13 +107,13 @@ KaTeX renders it. With `output="text"`, a pretty-printer converts it to readable
 > `show="formula"` and `show="full"` automatically degrade to `show="result"`
 > (the formula is the value itself — there is nothing distinct to show).
 
-### Performance
+**Performance**
 
 - LRU cache (500 entries) — identical expressions across refresh cycles cost nothing
 - targeted cache invalidation when a referenced tiddler changes
 - early-exit in render — skips re-render when the expression text is unchanged
 
-### Static validation
+**Static validation**
 
 Before any evaluation, unknown identifiers are caught with a Levenshtein "did you mean?" suggestion (e.g. `sqt` → `did you mean "sqrt"?`). Syntax errors from mathjs are reformatted with position context (`Syntax error at position 4, near ")"`). All error messages are delayed 200 ms to suppress flicker while typing.
 
@@ -131,7 +131,7 @@ Before any evaluation, unknown identifiers are caught with a Levenshtein "did yo
 | `scope` | tiddler title or `{a:1, b:2}` | — | Variable scope injected into the expression |
 | `silence` | `yes` · `no` | `no` | Suppress expression error display |
 
-#### When is `silence="yes"` useful?
+**When is `silence="yes"` useful?**
 
 `silence="yes"` suppresses errors that come from the *expression itself*.
 Use it when an expression is intentionally incomplete or conditionally invalid:
@@ -150,19 +150,19 @@ error message.
 
 ## Usage
 
-### Basic
+**Basic**
 
 ```
 <$math>1 + 2 * 3</$math>
 ```
 
-### Decimal separator
+**Decimal separator**
 
 ```
 <$math decimal="comma">1234567.89</$math>
 ```
 
-### Show modes
+**Show modes**
 
 ```
 <$math show="result">sqrt(2)</$math>
@@ -170,13 +170,13 @@ error message.
 <$math show="full" mode="block">sqrt(x^2 + 1)</$math>
 ```
 
-### Force plain text output
+**Force plain text output**
 
 ```
 <$math output="text" show="formula">pi * r^2</$math>
 ```
 
-### Notation
+**Notation**
 
 ```
 <$math notation="scientific">0.00000012</$math>
@@ -189,7 +189,7 @@ error message.
 
 For `bin`, `oct`, and `hex`: `decimal` and `precision` are ignored. Non-integer values are truncated silently (`3.7` → `3`). Unit results produce an error — use `number(expr, unit)` to extract the numeric value first.
 
-### Silence errors
+**Silence errors**
 
 ```
 <$math silence="yes">bad expression</$math>
@@ -197,7 +197,7 @@ For `bin`, `oct`, and `hex`: `decimal` and `precision` are ignored. Non-integer 
 
 Renders nothing on error instead of showing an error message.
 
-### Calculation precision
+**Calculation precision**
 
 ```
 <$math calcPrec="64">1e13 + 1.23456789 - 1e13</$math>
@@ -206,9 +206,9 @@ Renders nothing on error instead of showing an error message.
 See the [precision and performance](#precision-and-performance) section for
 when to use each mode.
 
-### Variable scope — `scope` attribute
+**Variable scope — `scope` attribute**
 
-#### Tiddler mode
+**Tiddler mode**
 
 ```
 <$math scope="MyVars">pi * r^2</$math>
@@ -222,7 +222,7 @@ h: 10
 vol: pi * r^2 * h
 ```
 
-#### Inline mode
+**Inline mode**
 
 ```
 <$math scope="{r: 3, h: 10}">pi * r^2 * h</$math>
@@ -234,7 +234,7 @@ Key rules:
 - no quotes on keys: `{a:1}` not `{"a":1}`
 - `math.unit(5 cm)` is auto-quoted — write it without inner quotes
 
-### Units
+**Units**
 
 ```
 <$math>9.81 m/s^2 * 80 kg</$math>
@@ -243,7 +243,7 @@ Key rules:
 <$math>5 cm + 2 m to inch</$math>
 ```
 
-### Scientific notation input
+**Scientific notation input**
 
 Standard `5e9`, `1.5e-3`, `2.5e+6` notation is fully supported.
 
@@ -264,7 +264,7 @@ expression.  Use unambiguous names instead: `euler`, `base`, `idx`, `imag`, etc.
 
 ## Precision and performance
 
-### Default: float
+**Default: float**
 
 By default the widget uses native IEEE 754 `float64` — the standard JavaScript
 `Number` type (~16 significant digits).  The formatter defaults to 6 decimal
@@ -278,7 +278,7 @@ visible to humans:
 
 Use float for the vast majority of expressions.
 
-### When to use BigNumber
+**When to use BigNumber**
 
 Switch to a BigNumber precision mode only when float produces a **visibly
 wrong result** that the default precision cap cannot fix:
@@ -289,7 +289,7 @@ wrong result** that the default precision cap cannot fix:
 | Subtraction residual | `0.3 - 0.1 - 0.1 - 0.1` | `-2.78e-17` ❌ | `0` ✅ |
 | Integer > MAX_SAFE_INTEGER | `9007199254740993` | `9007199254740992` ❌ | `9007199254740993` ✅ |
 
-### Calculation precision modes
+**Calculation precision modes**
 
 | `calcPrec` | Engine | Significant digits | Typical cost vs float |
 |---|---|---|---|
@@ -298,7 +298,7 @@ wrong result** that the default precision cap cannot fix:
 | `128` | BigNumber | 128 | ~5–6× slower |
 | `256` | BigNumber | 256 | ~8–10× slower |
 
-### Display vs internal precision
+**Display vs internal precision**
 
 `calcPrec` controls internal accuracy. `precision` controls visible digits.
 Raising `calcPrec` does **not** produce more visible digits — BigNumber only
@@ -308,7 +308,7 @@ reduces rounding errors in intermediate steps.
 > `calcPrec="64"` means 64 *decimal significant digits* (~213 bits), not 64 bits.  
 > `calcPrec="128"` is ~425 bits. Do not confuse with IEEE 754 bit widths.
 
-### Display precision defaults
+**Display precision defaults**
 
 | Notation | Plugin default | Typical range in practice |
 |---|---|---|
@@ -318,7 +318,7 @@ reduces rounding errors in intermediate steps.
 | `engineering` | 6 sig. digits | 3–4 (physical components rarely need more) |
 | `bin` · `oct` · `hex` | — | `precision` ignored — math.js emits the exact digit count |
 
-### Performance thresholds (benchmarked on V8/Node.js)
+**Performance thresholds (benchmarked on V8/Node.js)**
 
 | `calcPrec` | µs/eval (arithmetic) | µs/eval (`sin`/`cos`) | Widgets before jank |
 |---|---|---|---|
@@ -330,7 +330,7 @@ reduces rounding errors in intermediate steps.
 The LRU cache means these costs apply only on first evaluation per unique
 expression per tiddler change.
 
-### Hard limit: trig functions at high precision
+**Hard limit: trig functions at high precision**
 
 `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh` are computed by
 decimal.js internally.  They throw `[DecimalError] Precision limit exceeded` at
@@ -374,12 +374,12 @@ within this limit.
 
 ## Version history
 
-### v0.5.0 — 2026-07-02
+**v0.5.0 — 2026-07-02**
 
 **Breaking change:** the widget is now `<$math>` instead of `<$calc>`. Update
 all wikitext using the plugin.
 
-### v0.4.0 — 2026-06-15
+**v0.4.0 — 2026-06-15**
 
 `output=text` quality pass.  All modes now use NNBSP (U+202F) as thousands
 separator (EN previously used commas — non-standard).  Scientific notation
@@ -391,7 +391,7 @@ degrade to `show=result` automatically.  `mode=block` is now honoured for
 `output=text` (previously ignored) — the result is wrapped in a centred block
 `<div>`.
 
-### v0.3.0 — 2026-06-13
+**v0.3.0 — 2026-06-13**
 
 New `output` attribute (`katex` default / `text`). KaTeX is now opt-out rather
 than opt-in: active by default when the plugin is installed, graceful
@@ -402,7 +402,7 @@ producing an error. Temperatures render with `°C` / `°F` symbols.
 Integer-base notation (`bin`/`oct`/`hex`) now truncates non-integer values
 correctly. EN-style comma accepted as thousands separator on input (`1,000,000`).
 
-### v0.2.0 — 2026-06-12
+**v0.2.0 — 2026-06-12**
 
 Simplified API: `show` and `mode` replace `render`; input is now EN-only; all
 output passes through KaTeX (with plain-text fallback). New `show="full"` mode
@@ -411,7 +411,7 @@ renders formula and result together. `notation` replaces `scientific` (and gains
 `calcPrec` replaces `precision` for calculation precision; `precision` is now
 the display digit count.
 
-### v0.1.0 — 2026-06-06
+**v0.1.0 — 2026-06-06**
 
 Initial public release.  Establishes the plugin structure and evaluation
 pipeline.  All features are experimental and subject to breaking changes.
