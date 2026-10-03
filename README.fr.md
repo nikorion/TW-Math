@@ -7,56 +7,6 @@
 Ce projet est en développement actif et n'est pas prêt pour la production.  
 Attendez-vous à des changements incompatibles, à un comportement instable et à des ajustements continus de l'API.
 
----
-
-## Sommaire
-
-- [Présentation](#présentation)
-- [Fonctionnalités](#fonctionnalités)
-  - [Moteur Math.js](#moteur-mathjs)
-  - [Opérateurs et symboles Unicode](#opérateurs-et-symboles-unicode)
-  - [Modes de notation](#modes-de-notation)
-  - [Séparateur décimal](#séparateur-décimal)
-  - [Rendu des formules](#rendu-des-formules)
-  - [Performances](#performances)
-  - [Validation statique](#validation-statique)
-- [Attributs](#attributs)
-- [Utilisation](#utilisation)
-  - [Base](#base)
-  - [Séparateur décimal](#séparateur-décimal-1)
-  - [Modes d'affichage](#modes-daffichage)
-  - [Forcer un résultat en texte brut](#forcer-un-résultat-en-texte-brut)
-  - [Notation](#notation)
-  - [Masquer les erreurs](#masquer-les-erreurs)
-  - [Précision de calcul](#précision-de-calcul)
-  - [Portée des variables — attribut `scope`](#portée-des-variables--attribut-scope)
-  - [Unités](#unités)
-  - [Saisie en notation scientifique](#saisie-en-notation-scientifique)
-- [Identifiants réservés](#identifiants-réservés)
-- [Précision et performances](#précision-et-performances)
-  - [Par défaut : float](#par-défaut--float)
-  - [Quand utiliser BigNumber](#quand-utiliser-bignumber)
-  - [Modes de précision de calcul](#modes-de-précision-de-calcul)
-  - [Précision affichée et précision interne](#précision-affichée-et-précision-interne)
-  - [Précision d'affichage par défaut](#précision-daffichage-par-défaut)
-  - [Seuils de performance (mesurés sur V8/Node.js)](#seuils-de-performance-mesurés-sur-v8nodejs)
-  - [Limite stricte : fonctions trigonométriques en haute précision](#limite-stricte--fonctions-trigonométriques-en-haute-précision)
-- [Installation](#installation)
-- [Liens](#liens)
-- [Notes techniques](#notes-techniques)
-- [Limites](#limites)
-- [Feuille de route](#feuille-de-route)
-- [Historique des versions](#historique-des-versions)
-  - [v0.5.0 — 2026-07-02](#v050--2026-07-02)
-  - [v0.4.0 — 2026-06-15](#v040--2026-06-15)
-  - [v0.3.0 — 2026-06-13](#v030--2026-06-13)
-  - [v0.2.0 — 2026-06-12](#v020--2026-06-12)
-  - [v0.1.0 — 2026-06-06](#v010--2026-06-06)
-- [Crédits](#crédits)
-- [Licence](#licence)
-
----
-
 ## Présentation
 
 Un widget TiddlyWiki léger qui intègre Math.js pour évaluer des expressions
@@ -69,10 +19,6 @@ en ligne, avec :
 - un cache LRU pour les performances
 - une validation statique des expressions avec des messages d'erreur explicites
 - un rendu KaTeX par défaut quand le plugin est installé ; repli en douceur sur du texte brut
-
-[↑](#sommaire "Retour au sommaire")
-
----
 
 ## Fonctionnalités
 
@@ -171,10 +117,6 @@ KaTeX en assure le rendu. Avec `output="text"`, un formateur la convertit en tex
 
 Avant toute évaluation, les identifiants inconnus sont détectés, avec une suggestion « did you mean? » fondée sur la distance de Levenshtein (ex. `sqt` → `did you mean "sqrt"?`). Les erreurs de syntaxe de mathjs sont reformulées avec leur position (`Syntax error at position 4, near ")"`). Tous les messages d'erreur sont différés de 200 ms pour éviter le clignotement pendant la frappe.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Attributs
 
 | Attribut | Valeurs | Défaut | Description |
@@ -205,10 +147,6 @@ Le délai de 200 ms couvre déjà l'invalidité passagère pendant la frappe.
 `silence` couvre les cas où l'expression reste invalide même une fois
 stabilisée — et où ne rien afficher vaut mieux qu'un message d'erreur
 permanent.
-
-[↑](#sommaire "Retour au sommaire")
-
----
 
 ## Utilisation
 
@@ -311,10 +249,6 @@ La notation standard `5e9`, `1.5e-3`, `2.5e+6` est entièrement prise en charge.
 
 > N'écrivez **pas** `5 * e9` — cela signifie 5 fois un symbole `e9` non défini.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Identifiants réservés
 
 mathjs prédéfinit deux constantes d'une seule lettre qui ne peuvent pas servir
@@ -327,10 +261,6 @@ de noms de variable sans être écrasées silencieusement :
 
 Définir `e` ou `i` dans le `scope` masque ces constantes pour toute
 l'expression. Utiliser plutôt des noms sans ambiguïté : `euler`, `base`, `idx`, `imag`, etc.
-
-[↑](#sommaire "Retour au sommaire")
-
----
 
 ## Précision et performances
 
@@ -407,10 +337,6 @@ interne par decimal.js. Elles lèvent `[DecimalError] Precision limit exceeded` 
 partir d'une précision **≥ 510**. Le widget plafonne les options BigNumber à 256,
 bien en deçà de cette limite.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Installation
 
 1. Télécharger `plugin.json` depuis la [dernière version](https://github.com/nikorion/TW-Math/releases/latest)
@@ -419,18 +345,10 @@ bien en deçà de cette limite.
 
 > KaTeX (`$:/plugins/tiddlywiki/katex`) est facultatif — le widget se replie automatiquement sur du texte brut en son absence.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Liens
 
 - GitHub : <https://github.com/nikorion/TW-Math>
 - Démo en ligne : bientôt
-
-[↑](#sommaire "Retour au sommaire")
-
----
 
 ## Notes techniques
 
@@ -440,10 +358,6 @@ bien en deçà de cette limite.
 - Conçu pour les wikis en un seul fichier
 - Clé de cache : `[tiddler-title, normalized-expr, calcPrec, scope-attr]`
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Limites
 
 - Ce n'est pas un tableur — pas de graphe de dépendances entre tiddlers
@@ -451,20 +365,12 @@ bien en deçà de cette limite.
 - Le bac à sable est heuristique, ce n'est pas une VM sécurisée
 - La sortie KaTeX couvre les cas courants ; le LaTeX avancé (`\color`, `\align`, `\underbrace`) exige d'écrire du LaTeX brut via `<$katex />`
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Feuille de route
 
 - meilleur formatage des unités
 - mode de sortie en source LaTeX
 - bac à sable plus strict
 - outils de profilage des performances
-
-[↑](#sommaire "Retour au sommaire")
-
----
 
 ## Historique des versions
 
@@ -509,10 +415,6 @@ le nombre de chiffres affichés.
 Première version publique. Met en place la structure du plugin et la chaîne
 d'évaluation. Toutes les fonctionnalités sont expérimentales et sujettes à des changements incompatibles.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Crédits
 
 Inspiré du [tiddly-mathjs](https://github.com/mklauber/tiddly-mathjs) original
@@ -528,13 +430,7 @@ voir les conditions d'utilisation de SVG Repo.
 Développé avec l'aide d'OpenAI ChatGPT et d'Anthropic Claude pour la revue de code,
 le refactoring et la documentation.
 
-[↑](#sommaire "Retour au sommaire")
-
----
-
 ## Licence
 
 Licence MIT — voir `LICENSE`  
 Inclut Math.js (Apache 2.0)
-
-[↑](#sommaire "Retour au sommaire")
