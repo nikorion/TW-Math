@@ -1,5 +1,7 @@
 # 🧮 TiddlyWiki Math.js Widget
 
+**English** · [Français](README.fr.md)
+
 ![Status](https://img.shields.io/badge/status-experimental-orange)
 
 This project is under active development and is not production-ready.  
