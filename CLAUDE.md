@@ -29,15 +29,15 @@ src/math/                   ← sources du plugin (seul dossier à toucher)
   readme.tid / history.tid / licence.tid / tree.tid
 
 wiki/                       ← wiki TW de développement (ne pas versionner StoryList/HistoryList)
-  tiddlywiki.info           ← config : plugins chargés, targets build plugin-json + html
+  tiddlywiki.info           ← config : plugins chargés, targets build plugin-json + demo
   tiddlers/                 ← tiddlers de config UI + system/$__config_SyncFilter.tid
 
 dist/                       ← généré par pnpm build, gitignored
-docs/                       ← TW-Math-Wiki.html standalone (distribution)
+docs/                       ← démo générée par `pnpm build` (`index.html` + moteur externe), gitignorée, publiée par la CI
 ```
 
 ## Spécificités dev
-- `pnpm build` → `dist/TW-Math-Plugin.json` + `docs/TW-Math-Wiki.html`. Build HTML `publishFilter` (`../guides/build-html-publishfilter.md`) : `katex`/`highlight` sont **gardés** (ils servent au rendu du plugin lui-même).
+- `pnpm build` → `dist/TW-Math-Plugin.json` + démo `docs/` (publiée par la CI : `../guides/publication.md`). Démo `publishFilter` (`../guides/build-html-publishfilter.md`) : `katex`/`highlight` sont **gardés** (ils servent au rendu du plugin lui-même).
 - HMR : les `.tid`/`.multids` et assets (`assets/icon.svg` + `.meta`) sont poussés à chaud ; seuls un module `.js` (dont `math.min.js`) ou `plugin.info` rebootent.
 - `wiki/tiddlywiki.info` — plugins actifs : math, katex, highlight, filesystem, tiddlyweb. `eslint.config.js` : ES2020.
 

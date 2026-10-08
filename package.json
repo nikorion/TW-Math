@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint \"src/math/modules/*.js\"",
     "dev": "node ../tw-dev/dev.cjs",
-    "build": "tiddlywiki wiki --build plugin-json html"
+    "build": "tiddlywiki wiki --build plugin-json demo"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

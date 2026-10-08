@@ -339,9 +339,16 @@ bien en deçà de cette limite.
 
 ## Installation
 
-1. Télécharger `plugin.json` depuis la [dernière version](https://github.com/nikorion/TW-Math/releases/latest)
-2. Le glisser-déposer dans votre TiddlyWiki (≥ 5.2.0)
-3. Enregistrer et recharger
+**Démo en ligne** : [https://nikorion.github.io/TW-Math/](https://nikorion.github.io/TW-Math/) — pour essayer le plugin avant de l'installer.
+
+**Depuis la bibliothèque de plugins nikorion** (TiddlyWiki propose ensuite chaque nouvelle version en mise à jour) :
+
+1. Dans votre wiki, créer un tiddler tagué `$:/tags/PluginLibrary`, avec un champ `url` valant `https://nikorion.github.io/tw-dev/library/index.html` et une `caption` comme `nikorion`.
+2. Ouvrir *Panneau de configuration → Plugins → Obtenir d'autres plugins*, choisir la bibliothèque nikorion et installer **Math**.
+
+**À la main** : télécharger [`TW-Math-Plugin.json`](https://nikorion.github.io/TW-Math/TW-Math-Plugin.json) et le glisser-déposer sur votre wiki.
+
+Nécessite TiddlyWiki ≥ 5.2.0.
 
 > KaTeX (`$:/plugins/tiddlywiki/katex`) est facultatif — le widget se replie automatiquement sur du texte brut en son absence.
 

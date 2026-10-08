@@ -8,3 +8,6 @@ Thumbs.db
 
 # Notes Claude locales (perso, non versionnées)
 CLAUDE.local.md
+
+# Demo wiki, built and published by CI (never committed)
+docs/

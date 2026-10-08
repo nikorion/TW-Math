@@ -20,13 +20,50 @@
   },
   "build": {
     "plugin-json": [
-      "--output", "dist",
-      "--render", "$:/core/templates/exporters/JsonFile", "TW-Math-Plugin.json", "text/plain", "", "exportFilter", "[[$:/plugins/nikorion/math]]"
+      "--output",
+      "dist",
+      "--render",
+      "$:/core/templates/exporters/JsonFile",
+      "TW-Math-Plugin.json",
+      "text/plain",
+      "",
+      "exportFilter",
+      "[[$:/plugins/nikorion/math]]"
     ],
-    "html": [
-      "--output", "docs",
-      "--rendertiddler", "$:/core/save/all", "TW-Math-Wiki.html", "text/plain", "",
-      "publishFilter", "-[[$:/config/SyncFilter]] -[[$:/config/FileSystemPaths]] -[[$:/config/OriginalTiddlerPaths]] -[[$:/plugins/wikilabs/link-to-tabs]] -[[$:/plugins/kookma/commander]] -[[$:/plugins/oeyoews/tiddlywiki-codemirror-6]]"
+    "demo": [
+      "--output",
+      "docs",
+      "--render",
+      "$:/core/templates/exporters/JsonFile",
+      "TW-Math-Plugin.json",
+      "text/plain",
+      "",
+      "exportFilter",
+      "[[$:/plugins/nikorion/math]]",
+      "--savetiddlers",
+      "[!is[system]] :filter[get[type]prefix[image/]] -[get[type]match[image/svg+xml]]",
+      "images",
+      "--setfield",
+      "[!is[system]] :filter[get[type]prefix[image/]] -[get[type]match[image/svg+xml]]",
+      "_canonical_uri",
+      "$:/core/templates/canonical-uri-external-image",
+      "text/plain",
+      "--setfield",
+      "[!is[system]] :filter[get[type]prefix[image/]] -[get[type]match[image/svg+xml]]",
+      "text",
+      "",
+      "text/plain",
+      "--rendertiddler",
+      "$:/core/save/offline-external-js",
+      "index.html",
+      "text/plain",
+      "",
+      "publishFilter",
+      "-[[$:/config/SyncFilter]] -[[$:/config/FileSystemPaths]] -[[$:/config/OriginalTiddlerPaths]] -[[$:/plugins/wikilabs/link-to-tabs]] -[[$:/plugins/kookma/commander]] -[[$:/plugins/oeyoews/tiddlywiki-codemirror-6]]",
+      "--render",
+      "$:/core/templates/tiddlywiki5.js",
+      "[[tiddlywikicore-]addsuffix<version>addsuffix[.js]]",
+      "text/plain"
     ]
   }
 }
