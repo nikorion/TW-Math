@@ -1,5 +1,0 @@
-{
-  "watch": ["src/math/modules", "src/math/plugin.info"],
-  "ext": "js,info",
-  "exec": "tiddlywiki wiki --listen port=8080"
-}

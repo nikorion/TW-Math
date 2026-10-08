@@ -3,10 +3,8 @@ dist/
 wiki/tiddlers/$__StoryList*
 wiki/tiddlers/$__HistoryList*
 wiki/tiddlers/$__Import.tid
-wiki/tiddlers/system/$__config_dev_hmr-port.tid
 .DS_Store
 Thumbs.db
 
 # Notes Claude locales (perso, non versionnées)
 CLAUDE.local.md
-scripts/dev-ports.json
