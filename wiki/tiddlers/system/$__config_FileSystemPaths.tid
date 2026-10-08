@@ -2,4 +2,3 @@ title: $:/config/FileSystemPaths
 type: text/vnd.tiddlywiki
 
 [prefix[$:/]search-replace:g:regexp[/|\\],[_]addprefix[system/]]
-[!is[system]] -[[$:/config/OriginalTiddlerPaths]indexes[]] +[search-replace:g:regexp[/|\\],[_]addprefix[user/]]
