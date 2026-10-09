@@ -14,7 +14,6 @@
   "languages": [
     "fr-FR"
   ],
-  "pluginPath": "../src",
   "config": {
     "retain-original-tiddler-path": true
   },
