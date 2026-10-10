@@ -1,3 +1,7 @@
+created: 20261010181909292
+creator: nikorion
+modified: 20261010181909292
+modifier: nikorion
 title: $:/config/SyncFilter
 
 [is[tiddler]] -[[$:/core]] -[[$:/library/sjcl.js]] -[prefix[$:/boot/]] -[prefix[$:/HistoryList]] -[prefix[$:/StoryList]] -[[$:/language]] -[prefix[$:/nikorion/language/]] -[status[pending]plugin-type[import]] -[[$:/Import]] -[[$:/isEncrypted]] -[prefix[$:/status/]] -[prefix[$:/state/]] -[prefix[$:/temp/]] -[prefix[$:/plugins/nikorion/]]
