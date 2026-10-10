@@ -8,5 +8,5 @@ type: text/vnd.tiddlywiki
 |!Name |GOYOT |
 |!First name |Nicolas |
 |!Email |[[moi@nikorion.fr|mailto:moi@nikorion.fr]] |
-|!Gitea |[[git.nikorion.fr/nikorion|https://git.nikorion.fr/nikorion]] (primary; self-hosted on a Raspberry Pi 5) |
-|!GitHub |[[github.com/nikorion|https://github.com/nikorion]] (mirror of the Gitea repositories) |
+|!GitHub |[[github.com/nikorion|https://github.com/nikorion]] (primary) |
+|!Gitea |[[git.nikorion.fr/nikorion|https://git.nikorion.fr/nikorion]] (mirror; self-hosted on a Raspberry Pi 5) |
