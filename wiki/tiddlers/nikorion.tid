@@ -1,12 +1,11 @@
 created: 20261010192959000
 creator: nikorion
-modified: 20261010192959000
+modified: 20261010234400000
 modifier: nikorion
 title: nikorion
 type: text/vnd.tiddlywiki
 
-|!Name |GOYOT |
-|!First name |Nicolas |
-|!Email |[[moi@nikorion.fr|mailto:moi@nikorion.fr]] |
-|!GitHub |[[github.com/nikorion|https://github.com/nikorion]] (primary) |
-|!Gitea |[[git.nikorion.fr/nikorion|https://git.nikorion.fr/nikorion]] (mirror; self-hosted on a Raspberry Pi 5) |
+|!<<detect-language-lingo "Nikorion/Name">> |Nicolas GOYOT |
+|!<<detect-language-lingo "Nikorion/Email">> |[[moi@nikorion.fr|mailto:moi@nikorion.fr]] |
+|!GitHub |[[github.com/nikorion|https://github.com/nikorion]] (<<detect-language-lingo "Nikorion/Primary">>) |
+|!Gitea |[[git.nikorion.fr/nikorion|https://git.nikorion.fr/nikorion]] (<<detect-language-lingo "Nikorion/Mirror">>) |
