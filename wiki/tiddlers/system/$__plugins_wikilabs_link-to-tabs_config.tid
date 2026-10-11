@@ -1,0 +1,21 @@
+created: 20261011224600171
+creator: nikorion
+initial-opacity: 0.7
+modified: 20261011224600171
+modifier: nikorion
+shadow-action: tm-edit-tiddler
+show-all-links: none
+show-single-link: inline-block
+transition: 0.3
+title: $:/plugins/wikilabs/link-to-tabs/config
+type: text/vnd.tiddlywiki
+
+This tiddler is used to configure the "Link-to-tabs" plugin behaviour.
+
+There are 4 fields, which are used by [[$:/plugins/wikilabs/link-to-tabs/styles]] enable and disable the internal links.
+
+* show-all-links: {{!!show-all-links}}
+* show-single-link: {{!!show-single-link}}
+* initial-opacity: {{!!initial-opacity}}
+* transition time in seconds: {{!!transition}}
+* shadow-action: {{!!shadow-action}} (`tm-edit-tiddler`: clicking a tab-link opens every existing tiddler in edit mode)
