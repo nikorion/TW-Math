@@ -1,0 +1,11 @@
+created: 20251209175956789
+creator: nikorion
+modified: 20251210120318298
+modifier: nikorion
+tags: $:/tags/Stylesheet
+title: $:/styles/custom.css
+type: 
+
+.tc-tiddler-body {
+  padding: 0 5%;
+}
