@@ -5,4 +5,4 @@ modifier: nikorion
 title: $:/layout
 type: text/vnd.tiddlywiki
 
-$:/plugins/nikorion/scroll-layout/layout
+$:/plugins/nikorion/layout/layout
