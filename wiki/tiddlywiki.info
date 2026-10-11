@@ -7,7 +7,7 @@
     "tiddlywiki/highlight",
     "nikorion/math",
     "nikorion/plugin-info-tree",
-    "nikorion/layout",
+    "nikorion/scroll-layout",
     "nikorion/font-manager",
     "nikorion/detect-language"
   ],
