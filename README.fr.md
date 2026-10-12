@@ -381,12 +381,12 @@ Nécessite TiddlyWiki ≥ 5.2.0.
 
 ## Historique des versions
 
-**v0.5.0 — 2026-07-02**
+**v0.5.0 (2026-07-02)**
 
 **Changement incompatible :** le widget s'appelle désormais `<$math>` au lieu de `<$calc>`. Mettre à jour
 tout le wikitext qui utilise le plugin.
 
-**v0.4.0 — 2026-06-15**
+**v0.4.0 (2026-06-15)**
 
 Passe de qualité sur `output=text`. Tous les modes utilisent désormais la NNBSP (U+202F) comme séparateur
 de milliers (l'anglais utilisait auparavant des virgules — non standard).
@@ -397,7 +397,7 @@ corps de l'expression est un simple littéral numérique, `show=formula` / `show
 se replient automatiquement sur `show=result`. `mode=block` est désormais pris en compte pour
 `output=text` (auparavant ignoré) — le résultat est enveloppé dans un `<div>` bloc centré.
 
-**v0.3.0 — 2026-06-13**
+**v0.3.0 (2026-06-13)**
 
 Nouvel attribut `output` (`katex` par défaut / `text`). KaTeX devient actif par défaut
 plutôt que sur demande : actif dès que le plugin est installé, avec sinon un repli en douceur
@@ -408,7 +408,7 @@ produire une erreur. Les températures s'affichent avec les symboles `°C` / `°
 La notation en base entière (`bin`/`oct`/`hex`) tronque désormais correctement les valeurs non entières.
 La virgule à l'anglaise est acceptée comme séparateur de milliers en saisie (`1,000,000`).
 
-**v0.2.0 — 2026-06-12**
+**v0.2.0 (2026-06-12)**
 
 API simplifiée : `show` et `mode` remplacent `render` ; la saisie est désormais en anglais uniquement ; tout
 résultat passe par KaTeX (avec repli sur du texte brut). Le nouveau mode `show="full"`
@@ -417,7 +417,7 @@ affiche ensemble la formule et le résultat. `notation` remplace `scientific` (e
 `calcPrec` remplace `precision` pour la précision de calcul ; `precision` désigne désormais
 le nombre de chiffres affichés.
 
-**v0.1.0 — 2026-06-06**
+**v0.1.0 (2026-06-06)**
 
 Première version publique. Met en place la structure du plugin et la chaîne
 d'évaluation. Toutes les fonctionnalités sont expérimentales et sujettes à des changements incompatibles.

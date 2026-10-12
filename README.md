@@ -381,12 +381,12 @@ Requires TiddlyWiki ≥ 5.2.0.
 
 ## Version history
 
-**v0.5.0 — 2026-07-02**
+**v0.5.0 (2026-07-02)**
 
 **Breaking change:** the widget is now `<$math>` instead of `<$calc>`. Update
 all wikitext using the plugin.
 
-**v0.4.0 — 2026-06-15**
+**v0.4.0 (2026-06-15)**
 
 `output=text` quality pass.  All modes now use NNBSP (U+202F) as thousands
 separator (EN previously used commas — non-standard).  Scientific notation
@@ -398,7 +398,7 @@ degrade to `show=result` automatically.  `mode=block` is now honoured for
 `output=text` (previously ignored) — the result is wrapped in a centred block
 `<div>`.
 
-**v0.3.0 — 2026-06-13**
+**v0.3.0 (2026-06-13)**
 
 New `output` attribute (`katex` default / `text`). KaTeX is now opt-out rather
 than opt-in: active by default when the plugin is installed, graceful
@@ -409,7 +409,7 @@ producing an error. Temperatures render with `°C` / `°F` symbols.
 Integer-base notation (`bin`/`oct`/`hex`) now truncates non-integer values
 correctly. EN-style comma accepted as thousands separator on input (`1,000,000`).
 
-**v0.2.0 — 2026-06-12**
+**v0.2.0 (2026-06-12)**
 
 Simplified API: `show` and `mode` replace `render`; input is now EN-only; all
 output passes through KaTeX (with plain-text fallback). New `show="full"` mode
@@ -418,7 +418,7 @@ renders formula and result together. `notation` replaces `scientific` (and gains
 `calcPrec` replaces `precision` for calculation precision; `precision` is now
 the display digit count.
 
-**v0.1.0 — 2026-06-06**
+**v0.1.0 (2026-06-06)**
 
 Initial public release.  Establishes the plugin structure and evaluation
 pipeline.  All features are experimental and subject to breaking changes.
