@@ -5,7 +5,7 @@ modifier: nikorion
 title: nikorion
 type: text/vnd.tiddlywiki
 
-|!<<detect-language-lingo "Nikorion/Name">> |Nicolas GOYOT |
+|!<<detect-language-lingo "Nikorion/Name">> |GOYOT Nicolas |
 |!<<detect-language-lingo "Nikorion/Email">> |[[moi@nikorion.fr|mailto:moi@nikorion.fr]] |
 |!GitHub |[[github.com/nikorion|https://github.com/nikorion]] (<<detect-language-lingo "Nikorion/Primary">>) |
 |!Gitea |[[git.nikorion.fr/nikorion|https://git.nikorion.fr/nikorion]] (<<detect-language-lingo "Nikorion/Mirror">>) |
