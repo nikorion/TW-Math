@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#14151f">
+<title>🧮 TiddlyWiki Math.js Widget</title>
+<meta name="description" content="This project is under active development and is not production-ready.Expect breaking changes, unstable behavior, and ongoing API adjustments.">
+<meta name="generator" content="readme-html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23b8a4ff'/%3E%3Cstop offset='.55' stop-color='%236fd3f2'/%3E%3Cstop offset='1' stop-color='%23ff9fcf'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%2314151f'/%3E%3Cpath d='M9 8h9a5 5 0 0 1 0 10h-4l6 6' fill='none' stroke='url(%23g)' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M9 8v16' stroke='url(%23g)' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+@layer reset, base, mise-en-page, composants, code, utilitaires;
+
+/* ---------- Jetons de design ----------
+   Deux mesures sur --fond (#14151f) : WCAG 2 (ratio) et APCA (Lc, WCAG 3 en projet).
+   Texte 11,6:1 / Lc 76 (doux, sans blanc pur, comme le chapô) ; titres Lc 97 ; chapô Lc 76 ;
+   liens, survol, code en ligne Lc 74 (minimum APCA pour 18,5 px en graisse 400) ;
+   atténué Lc 70 (sommaire, étiquettes) ; commentaires de code Lc 60. */
+:root {
+  color-scheme: dark;
+  --fond: #14151f;
+  --fond-haut: #191a28;
+  --surface: #1c1e2c;
+  --surface-2: #242739;
+  --bordure: #30344a;
+  --bordure-douce: #262a3c;
+
+  --texte: #cacedc; /* même teinte que le chapô : moins d'éblouissement sur fond sombre */
+  --texte-fort: #eef0f8;
+  --texte-attenue: #c0c4d3;
+
+  --violet: #b8a4ff;
+  --cyan: #6fd3f2;
+  --rose: #ff9fcf;
+  --ambre: #ffc778;
+  --vert: #86e3b0;
+  --lien: #96d2ff;
+  --lien-survol: #ffb7cc; /* rose tiré vers le rouge */
+  --degrade: linear-gradient(100deg, var(--violet) 0%, var(--cyan) 52%, var(--rose) 100%);
+
+  --code-fond: #10111a;
+  --code-inline-fond: #252840;
+  --code-inline: #ffc48d;
+
+  --police: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Inter", "Noto Sans", Roboto, Ubuntu, sans-serif;
+  --police-sous-titre: Cambria, Georgia, "Sitka Text", "Palatino Linotype", serif;
+  --police-titre: "Sitka Heading", "Sitka Display", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Cambria, Georgia, serif;
+  --police-code: "Cascadia Code", "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+
+  --mesure: 32.7em; /* en em : suit la taille du texte ; <= 80 caractères sur les lignes les plus denses (WCAG 1.4.8 AAA, mesuré) */
+  --rayon: 0.75rem;
+  --rayon-petit: 0.4rem;
+  --marge: clamp(1rem, 4vw, 2.5rem);
+  --haut-fixe: 1.5rem;
+}
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  img, svg { display: block; max-inline-size: 100%; block-size: auto; }
+  button { font: inherit; color: inherit; }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    scrollbar-color: var(--bordure) var(--fond);
+    scroll-padding-block-start: var(--haut-fixe);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+  body {
+    isolation: isolate;
+    min-block-size: 100dvh;
+    background: var(--fond);
+    color: var(--texte);
+    font-family: var(--police);
+    font-size: clamp(1rem, 0.92rem + 0.3vw, 1.1563rem);
+    line-height: 1.72;
+    font-kerning: normal;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-wrap: break-word;
+  }
+  ::selection { background: rgb(184 164 255 / 0.32); color: var(--texte-fort); }
+  :focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
+    border-radius: var(--rayon-petit);
+  }
+  a { color: var(--lien); text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 0.26em; text-decoration-color: rgb(150 210 255 / 0.3); }
+  a:hover { color: var(--lien-survol); text-decoration-color: currentColor; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* Entrée rapide, sortie lente : le rose s'efface en douceur */
+    a { transition: color 0.6s ease, text-decoration-color 0.6s ease; }
+    a:hover { transition-duration: 0.15s; }
+    .ancre { transition: opacity 0.45s ease, color 0.3s ease; }
+    :is(h2, h3, h4, h5, h6):hover .ancre, .ancre:focus-visible { transition-duration: 0.9s, 0.3s; }
+  }
+}
+
+@layer mise-en-page {
+  .grille {
+    display: grid;
+    grid-template-columns: minmax(0, var(--mesure));
+    justify-content: center;
+    column-gap: clamp(2rem, 5vw, 4.5rem);
+    padding-inline: var(--marge);
+  }
+  @media (min-width: 70rem) {
+    .grille { grid-template-columns: 14.5rem minmax(0, var(--mesure)); }
+    .grille > :only-child, .entete-texte, .pied p { grid-column: 2; }
+  }
+
+  .entete { position: relative; overflow: clip; padding-block: clamp(3rem, 9vw, 6.5rem) clamp(2rem, 5vw, 3.5rem); }
+  /* Halo d'aurore : taches de couleur unie floutées (pas de dégradé), pour que les outils
+     mesurent le contraste réel du texte posé dessus — au plus clair, il garde > 10:1. */
+  .aurore { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+  .aurore span { position: absolute; border-radius: 50%; filter: blur(90px); }
+  .aurore span:nth-child(1) { inset: -9rem auto auto -6rem; inline-size: 38rem; block-size: 20rem; background-color: rgb(184 164 255 / 0.16); }
+  .aurore span:nth-child(2) { inset: -8rem -6rem auto auto; inline-size: 32rem; block-size: 18rem; background-color: rgb(111 211 242 / 0.12); }
+  .aurore span:nth-child(3) { inset: 2rem auto auto 45%; inline-size: 24rem; block-size: 12rem; background-color: rgb(255 159 207 / 0.07); }
+  .entete h1 {
+    font-family: var(--police-titre);
+    font-size: clamp(2.3rem, 1.5rem + 3.6vw, 3.9rem);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.012em;
+    color: var(--texte-fort);
+    text-wrap: balance;
+    margin-block-end: 1.1rem;
+  }
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .entete h1 {
+      background: var(--degrade);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+  }
+  .chapo { font-size: 1.18em; line-height: 1.62; color: #cacedc; max-inline-size: 40rem; text-wrap: pretty; }
+  .chapo > * + * { margin-block-start: 0.8em; }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block-start: 1.5rem; }
+  .badges img { block-size: 1.25rem; inline-size: auto; border-radius: 0.25rem; }
+
+  .langues ul { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin-block-end: 1.6rem; }
+  .langues :is(a, span) {
+    display: inline-block;
+    padding: 0.2rem 0.8rem;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    color: var(--texte-attenue);
+  }
+  .langues a:hover { color: var(--texte-fort); border-color: var(--violet); }
+  .langues [aria-current] { color: var(--fond); background: var(--texte-fort); border-color: var(--texte-fort); }
+
+  .corps { padding-block-end: 4rem; }
+  main:focus { outline: none; }
+
+  .sommaire {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin-block-end: 2.5rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--bordure-douce);
+    border-radius: var(--rayon);
+  }
+  .sommaire h2 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--texte-attenue);
+    margin-block-end: 0.7rem;
+  }
+  .sommaire ol { list-style: none; padding: 0; display: grid; gap: 0.1rem; }
+  .sommaire ol ol { padding-inline-start: 0.85rem; margin-block: 0.1rem 0.3rem; }
+  .sommaire a {
+    display: block;
+    padding: 0.28rem 0.7rem;
+    border-inline-start: 2px solid transparent;
+    border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+    color: var(--texte-attenue);
+    text-decoration: none;
+  }
+  .sommaire a:hover { color: var(--texte-fort); background: var(--surface-2); }
+  .sommaire a[aria-current] { color: var(--texte-fort); border-inline-start-color: var(--cyan); background: rgb(111 211 242 / 0.08); }
+  @media (min-width: 70rem) {
+    .sommaire {
+      position: sticky;
+      inset-block-start: 2rem;
+      align-self: start;
+      max-block-size: calc(100dvh - 4rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      margin: 0;
+      padding: 0;
+      background: none;
+      border: 0;
+    }
+  }
+  @media (min-width: 40rem) and (max-width: 69.99rem) {
+    .sommaire > ol { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1rem; }
+  }
+
+  .pied { border-block-start: 1px solid var(--bordure-douce); padding-block: 2rem 3rem; font-size: 0.875rem; color: var(--texte-attenue); }
+  .pied code { font-family: var(--police-code); font-size: 0.92em; color: var(--texte); }
+
+  .progression {
+    position: fixed;
+    inset: 0 0 auto;
+    block-size: 3px;
+    background: var(--degrade);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    z-index: 10;
+    display: none;
+  }
+  @supports (animation-timeline: scroll()) {
+    .progression { display: block; animation: progression linear both; animation-timeline: scroll(root); }
+  }
+  @keyframes progression { to { transform: scaleX(1); } }
+}
+
+@layer composants {
+  /* Semi-light (350) : choix de l'utilisateur, plus fin sur fond sombre ; chapô et interface restent en 400 */
+  .prose { font-weight: 350; text-wrap: pretty; hanging-punctuation: first; }
+  .prose > * + * { margin-block-start: 1.15em; }
+
+  .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    position: relative;
+    font-family: var(--police-sous-titre);
+    color: var(--texte-fort);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+    scroll-margin-block-start: var(--haut-fixe);
+  }
+  .prose h2 {
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 1.9rem);
+    font-weight: 700;
+    margin-block-start: 4.2rem;
+  }
+  .prose > h2:first-child { margin-block-start: 0; }
+  .prose h2::before {
+    content: "";
+    display: block;
+    inline-size: 2.25rem;
+    block-size: 3px;
+    border-radius: 3px;
+    background: var(--degrade);
+    margin-block-end: 0.9rem;
+  }
+  .prose h3 { font-size: 1.28em; font-weight: 650; margin-block-start: 2.2rem; }
+  .prose h4 { font-size: 1.08em; font-weight: 650; margin-block-start: 1.8rem; }
+  .prose :is(h5, h6) { font-size: 1em; font-weight: 650; margin-block-start: 1.6rem; color: var(--texte); }
+  .prose :is(h2, h3, h4, h5, h6) + * { margin-block-start: 0.75em; }
+
+  .ancre {
+    margin-inline-start: 0.45em;
+    color: var(--texte-attenue);
+    font-weight: 500;
+    text-decoration: none;
+    opacity: 0;
+  }
+  :is(h2, h3, h4, h5, h6):hover .ancre, .ancre:focus-visible { opacity: 1; }
+  .ancre:hover { color: var(--cyan); }
+  @media (hover: none) { .ancre { opacity: 0.55; } }
+
+  .prose strong { color: var(--texte-fort); font-weight: 650; }
+  .prose em { color: #e1e3ee; }
+
+  .prose :is(ul, ol) { padding-inline-start: 1.4em; }
+  .prose li + li, .prose li > :is(ul, ol) { margin-block-start: 0.45em; }
+  .prose li > p + p { margin-block-start: 0.6em; }
+  .prose ul > li::marker { color: var(--violet); }
+  .prose ol > li::marker { color: var(--cyan); font-weight: 650; font-variant-numeric: tabular-nums; }
+  .prose li:has(> input[type="checkbox"]) { list-style: none; margin-inline-start: -1.4em; }
+  .prose input[type="checkbox"] { accent-color: var(--violet); margin-inline-end: 0.5em; vertical-align: -0.1em; }
+
+  .prose a.externe::after {
+    content: "↗";
+    content: "↗" / "";
+    display: inline-block;
+    margin-inline-start: 0.12em;
+    font-size: 0.78em;
+    text-decoration: none;
+    color: var(--texte-attenue);
+  }
+
+  .prose blockquote {
+    padding: 0.9rem 1.25rem;
+    border-inline-start: 3px solid var(--violet);
+    background: var(--surface);
+    border-radius: 0 var(--rayon) var(--rayon) 0;
+    color: #c9ccdb;
+  }
+  .prose blockquote > * + * { margin-block-start: 0.7em; }
+
+  .alerte {
+    --teinte: var(--cyan);
+    padding: 1rem 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--teinte) 30%, transparent);
+    border-inline-start: 3px solid var(--teinte);
+    border-radius: var(--rayon-petit) var(--rayon) var(--rayon) var(--rayon-petit);
+    background: color-mix(in srgb, var(--teinte) 7%, var(--fond));
+  }
+  .alerte > * + * { margin-block-start: 0.6em; }
+  .alerte-titre { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--teinte); }
+  .alerte-icone { inline-size: 1.15em; block-size: 1.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .alerte-tip { --teinte: var(--vert); }
+  .alerte-important { --teinte: var(--violet); }
+  .alerte-warning { --teinte: var(--ambre); }
+  .alerte-caution { --teinte: #ff9a9a; }
+
+  .prose hr { border: 0; block-size: 1px; background: linear-gradient(90deg, transparent, var(--bordure), transparent); margin-block: 2.5rem; }
+
+  .prose img { border-radius: var(--rayon-petit); }
+  .prose p > img:only-child { margin-inline: auto; }
+
+  .tableau {
+    overflow-x: auto;
+    border: 1px solid var(--bordure-douce);
+    border-radius: var(--rayon);
+    background: var(--surface);
+  }
+  .tableau table { inline-size: 100%; border-collapse: collapse; font-size: 0.94em; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  .tableau th, .tableau td { padding: 0.65rem 1rem; text-align: start; vertical-align: top; }
+  .tableau thead th { background: var(--surface-2); color: var(--texte-fort); font-weight: 650; white-space: nowrap; }
+  .tableau tbody tr + tr { border-block-start: 1px solid var(--bordure-douce); }
+  .tableau tbody tr:hover { background: rgb(255 255 255 / 0.025); }
+  .tableau th[align="center"], .tableau td[align="center"] { text-align: center; }
+  .tableau th[align="right"], .tableau td[align="right"] { text-align: end; }
+
+  .evitement {
+    position: absolute;
+    inset-inline-start: 1rem;
+    inset-block-start: -10rem;
+    z-index: 20;
+    padding: 0.6rem 1rem;
+    background: var(--texte-fort);
+    color: var(--fond);
+    border-radius: var(--rayon-petit);
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .evitement:focus { inset-block-start: 1rem; }
+}
+
+@layer code {
+  :not(pre) > code {
+    font-family: var(--police-code);
+    font-size: 0.87em;
+    padding: 0.1em 0.32em;
+    border-radius: 0.3rem;
+    background: var(--code-inline-fond);
+    color: var(--code-inline);
+    box-shadow: inset 0 0 0 1px rgb(255 180 110 / 0.13);
+    font-variant-ligatures: none;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  a > code { color: inherit; }
+
+  .code {
+    border: 1px solid var(--bordure-douce);
+    border-radius: var(--rayon);
+    background: var(--code-fond);
+    overflow: hidden;
+  }
+  .code-tete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0.5rem 0.35rem 1rem;
+    border-block-end: 1px solid var(--bordure-douce);
+    background: var(--surface);
+  }
+  .code-langue { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texte-attenue); }
+  .copier {
+    padding: 0.2rem 0.75rem;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--texte-attenue);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-block-size: 1.75rem;
+  }
+  .copier:hover { color: var(--texte-fort); border-color: var(--violet); background: var(--surface-2); }
+  .copier[data-etat="ok"] { color: var(--vert); border-color: currentColor; }
+
+  .code pre {
+    margin: 0;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-family: var(--police-code);
+    font-size: 0.88em;
+    line-height: 1.65;
+    tab-size: 2;
+    color: #dfe2ee;
+    font-variant-ligatures: none;
+  }
+  .code pre:focus-visible { outline-offset: -2px; border-radius: 0; }
+
+  /* Coloration highlight.js : chaque teinte >= 7:1 sur --code-fond, commentaires >= 5,5:1 */
+  .hljs-comment, .hljs-quote { color: #aeb2c4; font-style: italic; }
+  .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag { color: #c3b1ff; }
+  .hljs-string, .hljs-regexp, .hljs-addition, .hljs-template-tag { color: #9fe3b4; }
+  .hljs-number, .hljs-symbol, .hljs-bullet, .hljs-link { color: #ffc98a; }
+  .hljs-title, .hljs-title.function_, .hljs-section { color: #8fc2ff; }
+  .hljs-built_in, .hljs-type, .hljs-title.class_, .hljs-meta { color: #79d8f2; }
+  .hljs-attr, .hljs-attribute, .hljs-name, .hljs-selector-class, .hljs-selector-id { color: #ffabd6; }
+  .hljs-variable, .hljs-template-variable, .hljs-params, .hljs-property { color: #f5c595; }
+  .hljs-deletion { color: #ffa3a3; }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 700; }
+}
+
+@layer utilitaires {
+  .visuellement-cache {
+    position: absolute !important;
+    inline-size: 1px; block-size: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (forced-colors: active) {
+    .entete h1 { color: CanvasText; background: none; }
+    .progression, .prose h2::before { display: none; }
+    .sommaire a[aria-current] { border-inline-start-color: Highlight; }
+  }
+
+  @media print {
+    :root { --fond: #fff; --texte: #1a1a1a; --texte-fort: #000; --texte-attenue: #444; --lien: #0645ad; --code-fond: #f6f6f8; --code-inline-fond: #eee; --code-inline: #6b2c00; --surface: #f6f6f8; --surface-2: #ececf0; --bordure: #ccc; --bordure-douce: #ddd; color-scheme: light; }
+    body { background: #fff; font-size: 11pt; }
+    .entete h1 { color: #000; background: none; }
+    .sommaire, .progression, .copier, .ancre, .evitement { display: none !important; }
+    .grille { grid-template-columns: 1fr !important; }
+    .code pre { white-space: pre-wrap; color: #1a1a1a; }
+    .prose a.externe::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+    .prose :is(h2, h3) { break-after: avoid; }
+    .code, .tableau, .alerte { break-inside: avoid; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="evitement" href="#contenu">Skip to content</a>
+<div class="progression" aria-hidden="true"></div>
+<header class="entete">
+<div class="aurore" aria-hidden="true"><span></span><span></span><span></span></div>
+<div class="grille">
+<div class="entete-texte">
+<nav class="langues" aria-label="Language"><ul><li><span aria-current="page" lang="en">English</span></li><li><a href="README.fr.html" hreflang="fr" lang="fr">Français</a></li></ul></nav>
+<h1>🧮 TiddlyWiki Math.js Widget</h1>
+<div class="chapo">
+<p>This project is under active development and is not production-ready.<br>Expect breaking changes, unstable behavior, and ongoing API adjustments.</p>
+</div>
+<p class="badges"><img src="https://img.shields.io/badge/status-experimental-orange" alt="Status" loading="lazy" decoding="async"></p>
+</div>
+</div>
+</header>
+<div class="grille corps">
+<nav class="sommaire" aria-labelledby="sommaire-titre">
+<h2 id="sommaire-titre">Contents</h2>
+<ol><li><a href="#overview">Overview</a></li><li><a href="#features">Features</a></li><li><a href="#attributes">Attributes</a></li><li><a href="#usage">Usage</a></li><li><a href="#reserved-identifiers">Reserved identifiers</a></li><li><a href="#precision-and-performance">Precision and performance</a></li><li><a href="#installation">Installation</a></li><li><a href="#links">Links</a></li><li><a href="#technical-notes">Technical notes</a></li><li><a href="#limitations">Limitations</a></li><li><a href="#roadmap">Roadmap</a></li><li><a href="#version-history">Version history</a></li><li><a href="#credits">Credits</a></li><li><a href="#development">Development</a></li><li><a href="#license">License</a></li></ol>
+</nav>
+<main id="contenu" tabindex="-1">
+<article class="prose">
+<h2 id="overview">Overview<a class="ancre" href="#overview"><span class="visuellement-cache">Link to section « Overview »</span><span aria-hidden="true">#</span></a></h2>
+<p>A lightweight TiddlyWiki widget integrating Math.js for inline expression
+evaluation with:</p>
+<ul>
+<li>configurable decimal separator (<code>point</code> or <code>comma</code>)</li>
+<li>input in EN notation: decimal point, thousands separators (space or EN comma), scientific notation</li>
+<li>configurable numeric precision (float or BigNumber)</li>
+<li>unit-aware output with automatic simplification</li>
+<li>LRU cache for performance</li>
+<li>static expression validation with friendly error messages</li>
+<li>KaTeX rendering by default when plugin is installed; graceful plain-text fallback</li>
+</ul>
+<h2 id="features">Features<a class="ancre" href="#features"><span class="visuellement-cache">Link to section « Features »</span><span aria-hidden="true">#</span></a></h2>
+<p><strong>Math.js engine</strong></p>
+<ul>
+<li>arithmetic and algebra</li>
+<li>functions: <code>sin</code>, <code>cos</code>, <code>sqrt</code>, <code>log</code>, <code>factorial</code>, <code>gcd</code>, and <a href="https://mathjs.org/docs/reference/functions.html" class="externe" rel="noopener">all others</a></li>
+<li>units with auto-simplification and explicit <code>to</code> conversion</li>
+<li>complex numbers (<code>2 + 3i</code>, <code>sqrt(-1)</code> → displayed normally)</li>
+</ul>
+<p><strong>Unicode operators and symbols</strong></p>
+<div class="tableau" role="region" tabindex="0" aria-label="Symbol · Meaning · Normalised to">
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+<th>Normalised to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>×</code> (U+00D7)</td>
+<td>multiplication</td>
+<td><code>*</code></td>
+</tr>
+<tr>
+<td><code>·</code> (U+00B7)</td>
+<td>middle dot</td>
+<td><code>*</code></td>
+</tr>
+<tr>
+<td><code>÷</code> (U+00F7)</td>
+<td>division</td>
+<td><code>/</code></td>
+</tr>
+<tr>
+<td><code>−</code> (U+2212)</td>
+<td>minus sign</td>
+<td><code>-</code></td>
+</tr>
+<tr>
+<td><code>–</code> (U+2013)</td>
+<td>en dash</td>
+<td><code>-</code></td>
+</tr>
+<tr>
+<td><code>°</code> (U+00B0)</td>
+<td>degree</td>
+<td><code> deg</code></td>
+</tr>
+<tr>
+<td><code>√x</code></td>
+<td>square root</td>
+<td><code>sqrt(x)</code></td>
+</tr>
+<tr>
+<td><code>∛x</code></td>
+<td>cube root</td>
+<td><code>cbrt(x)</code></td>
+</tr>
+<tr>
+<td><code>π</code></td>
+<td>pi</td>
+<td><code>pi</code></td>
+</tr>
+<tr>
+<td><code>τ</code></td>
+<td>tau = 2π</td>
+<td><code>(2*pi)</code></td>
+</tr>
+<tr>
+<td><code>∞</code></td>
+<td>infinity</td>
+<td><code>Infinity</code></td>
+</tr>
+<tr>
+<td><code>ℯ</code> (U+212F)</td>
+<td>Euler&#39;s number</td>
+<td><code>e</code></td>
+</tr>
+<tr>
+<td><code>‐</code> (U+2010)</td>
+<td>hyphen</td>
+<td><code>-</code></td>
+</tr>
+<tr>
+<td><code>x⁰</code>–<code>x⁹</code></td>
+<td>superscript digits (0–9)</td>
+<td><code>x^0</code>–<code>x^9</code></td>
+</tr>
+<tr>
+<td><code>½</code> <code>¼</code> <code>¾</code> …</td>
+<td>vulgar fractions (½ ⅓ ⅔ ¼ ¾ ⅕–⅘ ⅙ ⅚ ⅛–⅞)</td>
+<td><code>(1/2)</code> etc.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Notation modes</strong></p>
+<div class="code" role="group" aria-labelledby="code-1-l">
+<div class="code-tete"><span class="code-langue" id="code-1-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-1-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math notation=&quot;auto&quot;&gt;0.00000012&lt;/$math&gt;       &lt;!-- switches to scientific --&gt;
+&lt;$math notation=&quot;fixed&quot; precision=&quot;2&quot;&gt;3.14&lt;/$math&gt;
+&lt;$math notation=&quot;bin&quot;&gt;42&lt;/$math&gt;                &lt;!-- 0b101010 --&gt;
+&lt;$math notation=&quot;hex&quot;&gt;255&lt;/$math&gt;               &lt;!-- 0xff --&gt;</code></pre>
+</div>
+<div class="tableau" role="region" tabindex="0" aria-label="Value · Behaviour">
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto</code> (default)</td>
+<td>decimal; scientific for |x| &lt; 1e-3 or |x| ≥ 1e4 (ISO 80000-1: &gt; 4 significant figures)</td>
+</tr>
+<tr>
+<td><code>fixed</code></td>
+<td>always decimal</td>
+</tr>
+<tr>
+<td><code>scientific</code></td>
+<td>always scientific</td>
+</tr>
+<tr>
+<td><code>engineering</code></td>
+<td>exponent always multiple of 3</td>
+</tr>
+<tr>
+<td><code>bin</code></td>
+<td>binary, prefixed <code>0b</code></td>
+</tr>
+<tr>
+<td><code>oct</code></td>
+<td>octal, prefixed <code>0o</code></td>
+</tr>
+<tr>
+<td><code>hex</code></td>
+<td>hexadecimal, prefixed <code>0x</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Decimal separator</strong></p>
+<p><strong>NNBSP (U+202F, narrow no-break space)</strong> is always used as thousands separator
+per ISO 80000-1.  Only the decimal separator changes:</p>
+<div class="tableau" role="region" tabindex="0" aria-label="`decimal` · Decimal · Example">
+<table>
+<thead>
+<tr>
+<th><code>decimal</code></th>
+<th>Decimal</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>point</code> (default)</td>
+<td><code>.</code></td>
+<td><code>1 234 567.89</code></td>
+</tr>
+<tr>
+<td><code>comma</code></td>
+<td><code>,</code></td>
+<td><code>1 234 567,89</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Scientific notation exponents use Unicode superscripts: <code>1.23 × 10⁻⁶</code> (not <code>10^-6</code>).</p>
+<p><strong>Formula rendering</strong></p>
+<p><code>show=&quot;formula&quot;</code> and <code>show=&quot;full&quot;</code> typeset the expression. With <code>output=&quot;katex&quot;</code> (default),
+KaTeX renders it. With <code>output=&quot;text&quot;</code>, a pretty-printer converts it to readable plain text:</p>
+<div class="tableau" role="region" tabindex="0" aria-label="Input · KaTeX · Plain text">
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>KaTeX</th>
+<th>Plain text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sqrt(x^2+1)</code></td>
+<td><code>\sqrt{x^{2}+1}</code></td>
+<td><code>√(x²+1)</code></td>
+</tr>
+<tr>
+<td><code>(a+b)/c</code></td>
+<td><code>\frac{a+b}{c}</code></td>
+<td><code>(a+b)/c</code></td>
+</tr>
+<tr>
+<td><code>pi * r^2</code></td>
+<td><code>\pi\cdot r^{2}</code></td>
+<td><code>π·r²</code></td>
+</tr>
+<tr>
+<td><code>factorial(n)</code></td>
+<td><code>n!</code></td>
+<td><code>n!</code></td>
+</tr>
+<tr>
+<td><code>log10(x)</code></td>
+<td><code>\log_{10}\left(x\right)</code></td>
+<td><code>log₁₀(x)</code></td>
+</tr>
+<tr>
+<td><code>pi * 1000000</code></td>
+<td>KaTeX</td>
+<td><code>π · 1 000 000</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="code" role="group" aria-labelledby="code-2-l">
+<div class="code-tete"><span class="code-langue" id="code-2-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-2-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math show=&quot;formula&quot;&gt;(a+b)/c&lt;/$math&gt;
+&lt;$math show=&quot;full&quot; mode=&quot;block&quot;&gt;sqrt(x^2 + 1)&lt;/$math&gt;
+&lt;$math output=&quot;text&quot; show=&quot;formula&quot;&gt;pi * r^2&lt;/$math&gt;</code></pre>
+</div>
+<blockquote>
+<p>When <code>show=&quot;formula&quot;</code>, the expression is not evaluated — <code>notation</code>,
+<code>precision</code>, <code>calcPrec</code>, and <code>scope</code> are ignored.</p>
+</blockquote>
+<blockquote>
+<p>When the body is a <strong>plain numeric literal</strong> (e.g. <code>42</code>, <code>-3.14</code>),
+<code>show=&quot;formula&quot;</code> and <code>show=&quot;full&quot;</code> automatically degrade to <code>show=&quot;result&quot;</code>
+(the formula is the value itself — there is nothing distinct to show).</p>
+</blockquote>
+<p><strong>Performance</strong></p>
+<ul>
+<li>LRU cache (500 entries) — identical expressions across refresh cycles cost nothing</li>
+<li>targeted cache invalidation when a referenced tiddler changes</li>
+<li>early-exit in render — skips re-render when the expression text is unchanged</li>
+</ul>
+<p><strong>Static validation</strong></p>
+<p>Before any evaluation, unknown identifiers are caught with a Levenshtein &quot;did you mean?&quot; suggestion (e.g. <code>sqt</code> → <code>did you mean &quot;sqrt&quot;?</code>). Syntax errors from mathjs are reformatted with position context (<code>Syntax error at position 4, near &quot;)&quot;</code>). All error messages are delayed 200 ms to suppress flicker while typing.</p>
+<h2 id="attributes">Attributes<a class="ancre" href="#attributes"><span class="visuellement-cache">Link to section « Attributes »</span><span aria-hidden="true">#</span></a></h2>
+<div class="tableau" role="region" tabindex="0" aria-label="Attribute · Values · Default · Description">
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Values</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>output</code></td>
+<td><code>katex</code> · <code>text</code></td>
+<td><code>katex</code></td>
+<td>Rendering backend — KaTeX or plain text</td>
+</tr>
+<tr>
+<td><code>show</code></td>
+<td><code>result</code> · <code>formula</code> · <code>full</code></td>
+<td><code>result</code></td>
+<td>What to display. <code>formula</code>/<code>full</code> degrade to <code>result</code> when the body is a plain literal.</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>inline</code> · <code>block</code></td>
+<td><code>inline</code></td>
+<td>Display mode. KaTeX: render mode. <code>output=&quot;text&quot;</code>: centres result in a block <code>&lt;div&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>decimal</code></td>
+<td><code>point</code> · <code>comma</code></td>
+<td><code>point</code></td>
+<td>Decimal separator — <code>point</code> (1.5) or <code>comma</code> (1,5). Thousands separator is always NNBSP.</td>
+</tr>
+<tr>
+<td><code>notation</code></td>
+<td><code>auto</code> · <code>fixed</code> · <code>scientific</code> · <code>engineering</code> · <code>bin</code> · <code>oct</code> · <code>hex</code></td>
+<td><code>auto</code></td>
+<td>Numeric output notation</td>
+</tr>
+<tr>
+<td><code>precision</code></td>
+<td>positive integer</td>
+<td>6</td>
+<td>Display digits — significant digits for <code>auto</code>/<code>scientific</code>/<code>engineering</code>, decimal places after the point for <code>fixed</code>; ignored for <code>bin</code>/<code>oct</code>/<code>hex</code></td>
+</tr>
+<tr>
+<td><code>calcPrec</code></td>
+<td><code>float</code> · <code>64</code> · <code>128</code> · <code>256</code></td>
+<td><code>float</code></td>
+<td>Arithmetic precision mode — see warning below</td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>tiddler title or <code>{a:1, b:2}</code></td>
+<td>—</td>
+<td>Variable scope injected into the expression</td>
+</tr>
+<tr>
+<td><code>silence</code></td>
+<td><code>yes</code> · <code>no</code></td>
+<td><code>no</code></td>
+<td>Suppress expression error display</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>When is <code>silence=&quot;yes&quot;</code> useful?</strong></p>
+<p><code>silence=&quot;yes&quot;</code> suppresses errors that come from the <em>expression itself</em>.
+Use it when an expression is intentionally incomplete or conditionally invalid:</p>
+<ul>
+<li>The expression depends on a TiddlyWiki variable (<code>&lt;&lt;myVar&gt;&gt;</code>) that is not
+yet defined — the widget would show an error until the variable is populated.</li>
+<li>A table where some cells have no value yet, causing their expressions to
+temporarily fail.</li>
+<li>A live-preview context where the expression is typed incrementally and is
+invalid most of the time.</li>
+</ul>
+<p>The 200 ms debounce already covers momentary invalidity while typing.
+<code>silence</code> covers cases where the expression remains invalid even after
+stabilizing — and showing nothing is a better experience than a permanent
+error message.</p>
+<h2 id="usage">Usage<a class="ancre" href="#usage"><span class="visuellement-cache">Link to section « Usage »</span><span aria-hidden="true">#</span></a></h2>
+<p><strong>Basic</strong></p>
+<div class="code" role="group" aria-labelledby="code-3-l">
+<div class="code-tete"><span class="code-langue" id="code-3-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-3-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math&gt;1 + 2 * 3&lt;/$math&gt;</code></pre>
+</div>
+<p><strong>Decimal separator</strong></p>
+<div class="code" role="group" aria-labelledby="code-4-l">
+<div class="code-tete"><span class="code-langue" id="code-4-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-4-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math decimal=&quot;comma&quot;&gt;1234567.89&lt;/$math&gt;</code></pre>
+</div>
+<p><strong>Show modes</strong></p>
+<div class="code" role="group" aria-labelledby="code-5-l">
+<div class="code-tete"><span class="code-langue" id="code-5-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-5-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math show=&quot;result&quot;&gt;sqrt(2)&lt;/$math&gt;
+&lt;$math show=&quot;formula&quot;&gt;sqrt(2)&lt;/$math&gt;
+&lt;$math show=&quot;full&quot; mode=&quot;block&quot;&gt;sqrt(x^2 + 1)&lt;/$math&gt;</code></pre>
+</div>
+<p><strong>Force plain text output</strong></p>
+<div class="code" role="group" aria-labelledby="code-6-l">
+<div class="code-tete"><span class="code-langue" id="code-6-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-6-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math output=&quot;text&quot; show=&quot;formula&quot;&gt;pi * r^2&lt;/$math&gt;</code></pre>
+</div>
+<p><strong>Notation</strong></p>
+<div class="code" role="group" aria-labelledby="code-7-l">
+<div class="code-tete"><span class="code-langue" id="code-7-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-7-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math notation=&quot;scientific&quot;&gt;0.00000012&lt;/$math&gt;
+&lt;$math notation=&quot;engineering&quot; decimal=&quot;comma&quot;&gt;1234567&lt;/$math&gt;
+&lt;$math notation=&quot;fixed&quot; precision=&quot;2&quot;&gt;3.14159&lt;/$math&gt;
+&lt;$math notation=&quot;bin&quot;&gt;42&lt;/$math&gt;
+&lt;$math notation=&quot;oct&quot;&gt;42&lt;/$math&gt;
+&lt;$math notation=&quot;hex&quot;&gt;255&lt;/$math&gt;</code></pre>
+</div>
+<p>For <code>bin</code>, <code>oct</code>, and <code>hex</code>: <code>decimal</code> and <code>precision</code> are ignored. Non-integer values are truncated silently (<code>3.7</code> → <code>3</code>). Unit results produce an error — use <code>number(expr, unit)</code> to extract the numeric value first.</p>
+<p><strong>Silence errors</strong></p>
+<div class="code" role="group" aria-labelledby="code-8-l">
+<div class="code-tete"><span class="code-langue" id="code-8-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-8-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math silence=&quot;yes&quot;&gt;bad expression&lt;/$math&gt;</code></pre>
+</div>
+<p>Renders nothing on error instead of showing an error message.</p>
+<p><strong>Calculation precision</strong></p>
+<div class="code" role="group" aria-labelledby="code-9-l">
+<div class="code-tete"><span class="code-langue" id="code-9-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-9-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math calcPrec=&quot;64&quot;&gt;1e13 + 1.23456789 - 1e13&lt;/$math&gt;</code></pre>
+</div>
+<p>See the <a href="#precision-and-performance">precision and performance</a> section for
+when to use each mode.</p>
+<p><strong>Variable scope — <code>scope</code> attribute</strong></p>
+<p><strong>Tiddler mode</strong></p>
+<div class="code" role="group" aria-labelledby="code-10-l">
+<div class="code-tete"><span class="code-langue" id="code-10-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-10-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math scope=&quot;MyVars&quot;&gt;pi * r^2&lt;/$math&gt;</code></pre>
+</div>
+<p><code>MyVars</code> is a tiddler with one <code>name: expression</code> per line, evaluated in order:</p>
+<div class="code" role="group" aria-labelledby="code-11-l">
+<div class="code-tete"><span class="code-langue" id="code-11-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-11-l">Copy</button></div>
+<pre tabindex="0"><code>r: 5
+h: 10
+vol: pi * r^2 * h</code></pre>
+</div>
+<p><strong>Inline mode</strong></p>
+<div class="code" role="group" aria-labelledby="code-12-l">
+<div class="code-tete"><span class="code-langue" id="code-12-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-12-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math scope=&quot;{r: 3, h: 10}&quot;&gt;pi * r^2 * h&lt;/$math&gt;</code></pre>
+</div>
+<p>Key rules:</p>
+<ul>
+<li>valid mathjs identifiers only: <code>[a-zA-Z_$][a-zA-Z0-9_$]*</code></li>
+<li><code>r2</code> ✓ · <code>my_var</code> ✓ · <code>2r</code> ✗ · <code>my-var</code> ✗</li>
+<li>no quotes on keys: <code>{a:1}</code> not <code>{&quot;a&quot;:1}</code></li>
+<li><code>math.unit(5 cm)</code> is auto-quoted — write it without inner quotes</li>
+</ul>
+<p><strong>Units</strong></p>
+<div class="code" role="group" aria-labelledby="code-13-l">
+<div class="code-tete"><span class="code-langue" id="code-13-l">Text</span><button type="button" class="copier" data-copier hidden aria-describedby="code-13-l">Copy</button></div>
+<pre tabindex="0"><code>&lt;$math&gt;9.81 m/s^2 * 80 kg&lt;/$math&gt;
+&lt;$math&gt;460 V * 20 A * 30 days to kWh&lt;/$math&gt;
+&lt;$math&gt;100 degF to degC&lt;/$math&gt;
+&lt;$math&gt;5 cm + 2 m to inch&lt;/$math&gt;</code></pre>
+</div>
+<p><strong>Scientific notation input</strong></p>
+<p>Standard <code>5e9</code>, <code>1.5e-3</code>, <code>2.5e+6</code> notation is fully supported.</p>
+<blockquote>
+<p>Do <strong>not</strong> write <code>5 * e9</code> — that means 5 times an undefined symbol <code>e9</code>.</p>
+</blockquote>
+<h2 id="reserved-identifiers">Reserved identifiers<a class="ancre" href="#reserved-identifiers"><span class="visuellement-cache">Link to section « Reserved identifiers »</span><span aria-hidden="true">#</span></a></h2>
+<p>mathjs pre-defines two single-letter constants that cannot be used as variable
+names without silently overriding them:</p>
+<div class="tableau" role="region" tabindex="0" aria-label="Identifier · mathjs meaning">
+<table>
+<thead>
+<tr>
+<th>Identifier</th>
+<th>mathjs meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>e</code></td>
+<td>Euler&#39;s number, 2.718281828… (also <code>ℯ</code> U+212F)</td>
+</tr>
+<tr>
+<td><code>i</code></td>
+<td>imaginary unit, √−1</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Defining <code>e</code> or <code>i</code> in the <code>scope</code> shadows these constants for the entire
+expression.  Use unambiguous names instead: <code>euler</code>, <code>base</code>, <code>idx</code>, <code>imag</code>, etc.</p>
+<h2 id="precision-and-performance">Precision and performance<a class="ancre" href="#precision-and-performance"><span class="visuellement-cache">Link to section « Precision and performance »</span><span aria-hidden="true">#</span></a></h2>
+<p><strong>Default: float</strong></p>
+<p>By default the widget uses native IEEE 754 <code>float64</code> — the standard JavaScript
+<code>Number</code> type (~16 significant digits).  The formatter defaults to 6 decimal
+places (<code>precision</code> default), which already suppresses most float artefacts
+visible to humans:</p>
+<div class="tableau" role="region" tabindex="0" aria-label="Expression · Raw float · Displayed (12 dec.)">
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Raw float</th>
+<th>Displayed (12 dec.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0.1 + 0.2</code></td>
+<td><code>0.30000000000000004</code></td>
+<td><code>0.3</code> ✅</td>
+</tr>
+<tr>
+<td><code>9.81 * 80</code></td>
+<td><code>784.8000000000001</code></td>
+<td><code>784.8</code> ✅</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Use float for the vast majority of expressions.</p>
+<p><strong>When to use BigNumber</strong></p>
+<p>Switch to a BigNumber precision mode only when float produces a <strong>visibly
+wrong result</strong> that the default precision cap cannot fix:</p>
+<div class="tableau" role="region" tabindex="0" aria-label="Situation · Example · Float result · BigNumber result">
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Example</th>
+<th>Float result</th>
+<th>BigNumber result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Catastrophic cancellation</td>
+<td><code>1e13 + 1.23456789 - 1e13</code></td>
+<td><code>1.234375</code> ❌</td>
+<td><code>1.23456789</code> ✅</td>
+</tr>
+<tr>
+<td>Subtraction residual</td>
+<td><code>0.3 - 0.1 - 0.1 - 0.1</code></td>
+<td><code>-2.78e-17</code> ❌</td>
+<td><code>0</code> ✅</td>
+</tr>
+<tr>
+<td>Integer &gt; MAX_SAFE_INTEGER</td>
+<td><code>9007199254740993</code></td>
+<td><code>9007199254740992</code> ❌</td>
+<td><code>9007199254740993</code> ✅</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Calculation precision modes</strong></p>
+<div class="tableau" role="region" tabindex="0" aria-label="`calcPrec` · Engine · Significant digits · Typical cost vs float">
+<table>
+<thead>
+<tr>
+<th><code>calcPrec</code></th>
+<th>Engine</th>
+<th>Significant digits</th>
+<th>Typical cost vs float</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>float</code> (default)</td>
+<td>IEEE 754</td>
+<td>~16</td>
+<td>1× baseline</td>
+</tr>
+<tr>
+<td><code>64</code></td>
+<td>BigNumber</td>
+<td>64</td>
+<td>~3–4× slower</td>
+</tr>
+<tr>
+<td><code>128</code></td>
+<td>BigNumber</td>
+<td>128</td>
+<td>~5–6× slower</td>
+</tr>
+<tr>
+<td><code>256</code></td>
+<td>BigNumber</td>
+<td>256</td>
+<td>~8–10× slower</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Display vs internal precision</strong></p>
+<p><code>calcPrec</code> controls internal accuracy. <code>precision</code> controls visible digits.
+Raising <code>calcPrec</code> does <strong>not</strong> produce more visible digits — BigNumber only
+reduces rounding errors in intermediate steps.</p>
+<blockquote>
+<p><strong>Note on BigNumber digit counts vs bits:</strong><br><code>calcPrec=&quot;64&quot;</code> means 64 <em>decimal significant digits</em> (~213 bits), not 64 bits.<br><code>calcPrec=&quot;128&quot;</code> is ~425 bits. Do not confuse with IEEE 754 bit widths.</p>
+</blockquote>
+<p><strong>Display precision defaults</strong></p>
+<div class="tableau" role="region" tabindex="0" aria-label="Notation · Plugin default · Typical range in practice">
+<table>
+<thead>
+<tr>
+<th>Notation</th>
+<th>Plugin default</th>
+<th>Typical range in practice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto</code></td>
+<td>6 sig. digits</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>fixed</code></td>
+<td>6 decimal places</td>
+<td>2–4 (general public) · 6–15 (technical)</td>
+</tr>
+<tr>
+<td><code>scientific</code></td>
+<td>6 sig. digits</td>
+<td>3–5 (publications) · 6–8 (advanced scientific work)</td>
+</tr>
+<tr>
+<td><code>engineering</code></td>
+<td>6 sig. digits</td>
+<td>3–4 (physical components rarely need more)</td>
+</tr>
+<tr>
+<td><code>bin</code> · <code>oct</code> · <code>hex</code></td>
+<td>—</td>
+<td><code>precision</code> ignored — math.js emits the exact digit count</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Performance thresholds (benchmarked on V8/Node.js)</strong></p>
+<div class="tableau" role="region" tabindex="0" aria-label="`calcPrec` · µs/eval (arithmetic) · µs/eval (`sin`/`cos`) · Widgets before jank">
+<table>
+<thead>
+<tr>
+<th><code>calcPrec</code></th>
+<th>µs/eval (arithmetic)</th>
+<th>µs/eval (<code>sin</code>/<code>cos</code>)</th>
+<th>Widgets before jank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>float</code></td>
+<td>~13 µs</td>
+<td>~14 µs</td>
+<td>&gt;1000 ✅</td>
+</tr>
+<tr>
+<td><code>64</code></td>
+<td>~66 µs</td>
+<td>~925 µs</td>
+<td>~240 (arith.) / ~17 (trig)</td>
+</tr>
+<tr>
+<td><code>128</code></td>
+<td>~169 µs</td>
+<td>~1 957 µs</td>
+<td>~94 (arith.) / ~8 (trig)</td>
+</tr>
+<tr>
+<td><code>256</code></td>
+<td>~89 µs</td>
+<td>~5 346 µs</td>
+<td>~180 (arith.) / ~3 (trig)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The LRU cache means these costs apply only on first evaluation per unique
+expression per tiddler change.</p>
+<p><strong>Hard limit: trig functions at high precision</strong></p>
+<p><code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>sinh</code>, <code>cosh</code> are computed by
+decimal.js internally.  They throw <code>[DecimalError] Precision limit exceeded</code> at
+precision <strong>≥ 510</strong>.  The widget caps BigNumber options at 256, which is safely
+within this limit.</p>
+<h2 id="installation">Installation<a class="ancre" href="#installation"><span class="visuellement-cache">Link to section « Installation »</span><span aria-hidden="true">#</span></a></h2>
+<p><strong>Live demo</strong>: <a href="https://nikorion.github.io/TW-Math/" class="externe" rel="noopener">https://nikorion.github.io/TW-Math/</a> — try the plugin before installing it.</p>
+<p><strong>From the nikorion plugin library</strong> (TiddlyWiki then offers each new version as an update):</p>
+<ol>
+<li>On <a href="https://nikorion.github.io/TW-Plugin-Library/" class="externe" rel="noopener">nikorion.github.io/TW-Plugin-Library</a>, drag the <strong>nikorion plugin library</strong> button onto your wiki (once per wiki).</li>
+<li>Open <em>Control Panel → Plugins → Get more plugins → Open plugin library</em>, choose the nikorion tab and install <strong>Math</strong>.</li>
+</ol>
+<p><strong>By hand</strong>: download <a href="https://nikorion.github.io/TW-Math/TW-Math-Plugin.json" class="externe" rel="noopener"><code>TW-Math-Plugin.json</code></a> and drag it onto your wiki.</p>
+<p>Requires TiddlyWiki ≥ 5.2.0.</p>
+<blockquote>
+<p>KaTeX (<code>$:/plugins/tiddlywiki/katex</code>) is optional — the widget falls back to plain text automatically if absent.</p>
+</blockquote>
+<h2 id="links">Links<a class="ancre" href="#links"><span class="visuellement-cache">Link to section « Links »</span><span aria-hidden="true">#</span></a></h2>
+<ul>
+<li>GitHub: <a href="https://github.com/nikorion/TW-Math" class="externe" rel="noopener">https://github.com/nikorion/TW-Math</a></li>
+<li>Live demo: soon</li>
+</ul>
+<h2 id="technical-notes">Technical notes<a class="ancre" href="#technical-notes"><span class="visuellement-cache">Link to section « Technical notes »</span><span aria-hidden="true">#</span></a></h2>
+<ul>
+<li>Built on <a href="https://mathjs.org/" class="externe" rel="noopener">Math.js</a> — float or BigNumber instance depending on <code>calcPrec</code></li>
+<li>Uses TiddlyWiki widget lifecycle (<code>render</code> / <code>refresh</code>)</li>
+<li>No runtime dependencies beyond Math.js (KaTeX is optional)</li>
+<li>Designed for single-file wikis</li>
+<li>Cache key: <code>[tiddler-title, normalized-expr, calcPrec, scope-attr]</code></li>
+</ul>
+<h2 id="limitations">Limitations<a class="ancre" href="#limitations"><span class="visuellement-cache">Link to section « Limitations »</span><span aria-hidden="true">#</span></a></h2>
+<ul>
+<li>Not a spreadsheet — no dependency graph between tiddlers</li>
+<li>No reactive variable propagation across widgets</li>
+<li>Sandbox is heuristic, not a secure VM</li>
+<li>KaTeX output covers common cases; advanced LaTeX (<code>\color</code>, <code>\align</code>, <code>\underbrace</code>) requires writing raw LaTeX via <code>&lt;$katex /&gt;</code></li>
+</ul>
+<h2 id="roadmap">Roadmap<a class="ancre" href="#roadmap"><span class="visuellement-cache">Link to section « Roadmap »</span><span aria-hidden="true">#</span></a></h2>
+<ul>
+<li>improved unit formatting</li>
+<li>LaTeX source output mode</li>
+<li>stricter sandbox</li>
+<li>performance profiling tools</li>
+</ul>
+<h2 id="version-history">Version history<a class="ancre" href="#version-history"><span class="visuellement-cache">Link to section « Version history »</span><span aria-hidden="true">#</span></a></h2>
+<p><strong>v0.5.0 (2026-07-02)</strong></p>
+<p><strong>Breaking change:</strong> the widget is now <code>&lt;$math&gt;</code> instead of <code>&lt;$calc&gt;</code>. Update
+all wikitext using the plugin.</p>
+<p><strong>v0.4.0 (2026-06-15)</strong></p>
+<p><code>output=text</code> quality pass.  All modes now use NNBSP (U+202F) as thousands
+separator (EN previously used commas — non-standard).  Scientific notation
+exponents now render as Unicode superscripts (<code>10⁻⁶</code> instead of <code>10^-6</code>).
+<code>show=formula</code> and <code>show=full</code> in text mode now group digits in large numbers
+(<code>1 000 000</code>) and respect the <code>decimal</code> attribute for the decimal separator.  When the
+expression body is a plain numeric literal, <code>show=formula</code> / <code>show=full</code>
+degrade to <code>show=result</code> automatically.  <code>mode=block</code> is now honoured for
+<code>output=text</code> (previously ignored) — the result is wrapped in a centred block
+<code>&lt;div&gt;</code>.</p>
+<p><strong>v0.3.0 (2026-06-13)</strong></p>
+<p>New <code>output</code> attribute (<code>katex</code> default / <code>text</code>). KaTeX is now opt-out rather
+than opt-in: active by default when the plugin is installed, graceful
+pretty-printed plain-text fallback otherwise. Plain text mode uses a new
+pretty-printer (<code>prettyprint.js</code>) for formula rendering (π, ·, superscripts,
+√, ∛, !, log₂…). Complex numbers are now displayed normally instead of
+producing an error. Temperatures render with <code>°C</code> / <code>°F</code> symbols.
+Integer-base notation (<code>bin</code>/<code>oct</code>/<code>hex</code>) now truncates non-integer values
+correctly. EN-style comma accepted as thousands separator on input (<code>1,000,000</code>).</p>
+<p><strong>v0.2.0 (2026-06-12)</strong></p>
+<p>Simplified API: <code>show</code> and <code>mode</code> replace <code>render</code>; input is now EN-only; all
+output passes through KaTeX (with plain-text fallback). New <code>show=&quot;full&quot;</code> mode
+renders formula and result together. <code>notation</code> replaces <code>scientific</code> (and gains
+<code>&quot;bin&quot;</code>, <code>&quot;oct&quot;</code>, <code>&quot;hex&quot;</code> for integer-base output). <code>scope</code> replaces <code>data</code>.
+<code>calcPrec</code> replaces <code>precision</code> for calculation precision; <code>precision</code> is now
+the display digit count.</p>
+<p><strong>v0.1.0 (2026-06-06)</strong></p>
+<p>Initial public release.  Establishes the plugin structure and evaluation
+pipeline.  All features are experimental and subject to breaking changes.</p>
+<h2 id="credits">Credits<a class="ancre" href="#credits"><span class="visuellement-cache">Link to section « Credits »</span><span aria-hidden="true">#</span></a></h2>
+<p>Inspired by the original <a href="https://github.com/mklauber/tiddly-mathjs" class="externe" rel="noopener">tiddly-mathjs</a>
+by mklauber.  The TiddlyWiki integration patterns and overall structure derive
+from that work.</p>
+<p>Mathematical evaluation by <a href="https://github.com/josdejong/mathjs" class="externe" rel="noopener">Math.js</a>,
+created by Jos de Jong and the Math.js community.</p>
+<p>Icon from <a href="https://www.svgrepo.com/svg/260088/calculator" class="externe" rel="noopener">SVG Repo</a> —
+see SVG Repo terms of use.</p>
+<p>Developed with assistance from OpenAI ChatGPT and Anthropic Claude for code
+review, refactoring, and documentation.</p>
+<h2 id="development">Development<a class="ancre" href="#development"><span class="visuellement-cache">Link to section « Development »</span><span aria-hidden="true">#</span></a></h2>
+<p>Clone <a href="https://github.com/nikorion/tw-dev" class="externe" rel="noopener">tw-dev</a> next to this repository: <code>pnpm dev</code> runs it, and it links by itself the nikorion plugins the dev wiki loads — from clones sitting next to this one (<code>../TW-Math</code>…), so your edits to them are live, otherwise from a read-only copy it fetches from GitHub. No symlink, no <code>TIDDLYWIKI_PLUGIN_PATH</code>, no admin rights. <code>pnpm build</code> alone still needs <code>TIDDLYWIKI_PLUGIN_PATH</code>: point it to <code>../tw-dev/.state/TW-Math/plugins</code>, created by <code>pnpm dev</code>.</p>
+<div class="code" role="group" aria-labelledby="code-14-l">
+<div class="code-tete"><span class="code-langue" id="code-14-l">Shell</span><button type="button" class="copier" data-copier hidden aria-describedby="code-14-l">Copy</button></div>
+<pre tabindex="0"><code class="hljs language-sh">pnpm install
+pnpm dev     <span class="hljs-comment"># dev wiki + hot reload; the URL (random free port) is printed on start</span>
+pnpm build   <span class="hljs-comment"># dist/TW-Math-Plugin.json + docs/ (demo wiki, published by CI)</span></code></pre>
+</div>
+<h2 id="license">License<a class="ancre" href="#license"><span class="visuellement-cache">Link to section « License »</span><span aria-hidden="true">#</span></a></h2>
+<p>MIT License — see <code>LICENSE</code><br>Includes Math.js (Apache 2.0)</p>
+</article>
+</main>
+</div>
+<footer class="pied">
+<div class="grille">
+<p>Page generated from <code>README.md</code> · <time datetime="2026-10-19">October 19, 2026</time> · <a href="#contenu">Back to top</a></p>
+</div>
+</footer>
+<p class="visuellement-cache" role="status" id="annonce"></p>
+<script type="module" data-copie-ok="Code copied to clipboard" data-copie-echec="Copy failed: the code is selected, press Ctrl+C">
+// Amélioration progressive : la page reste complète sans JavaScript.
+const reglages = document.querySelector('script[data-copie-ok]').dataset;
+const annonce = document.getElementById('annonce');
+const dire = (texte) => { annonce.textContent = ''; requestAnimationFrame(() => { annonce.textContent = texte; }); };
+
+// Boutons « Copier » des blocs de code
+for (const bouton of document.querySelectorAll('[data-copier]')) {
+  const libelle = bouton.textContent;
+  bouton.hidden = false;
+  bouton.addEventListener('click', async () => {
+    const code = bouton.closest('.code').querySelector('code');
+    try {
+      await navigator.clipboard.writeText(code.innerText.replace(/\n$/, ''));
+      bouton.dataset.etat = 'ok';
+      bouton.textContent = '✓';
+      dire(reglages.copieOk);
+    } catch {
+      getSelection().selectAllChildren(code);
+      dire(reglages.copieEchec);
+    }
+    setTimeout(() => { bouton.textContent = libelle; delete bouton.dataset.etat; }, 1800);
+  });
+}
+
+// Sommaire : section en cours de lecture
+const liens = new Map([...document.querySelectorAll('.sommaire a')].map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+if (liens.size && 'IntersectionObserver' in window) {
+  const titres = [...document.querySelectorAll('.prose :is(h2, h3)[id]')].filter((h) => liens.has(h.id));
+  const visibles = new Set();
+  let actif = null;
+  const activer = (id) => {
+    if (id === actif) return;
+    liens.get(actif)?.removeAttribute('aria-current');
+    actif = id;
+    const lien = liens.get(id);
+    if (!lien) return;
+    lien.setAttribute('aria-current', 'location');
+    const sommaire = lien.closest('.sommaire');
+    if (sommaire.scrollHeight > sommaire.clientHeight) lien.scrollIntoView({ block: 'nearest' });
+  };
+  const observateur = new IntersectionObserver((entrees) => {
+    for (const e of entrees) e.isIntersecting ? visibles.add(e.target) : visibles.delete(e.target);
+    const premier = titres.find((h) => visibles.has(h));
+    if (premier) return activer(premier.id);
+    const dessus = titres.filter((h) => h.getBoundingClientRect().top < 0).at(-1);
+    activer(dessus?.id ?? titres[0]?.id);
+  }, { rootMargin: '0px 0px -65% 0px' });
+  titres.forEach((h) => observateur.observe(h));
+}
+</script>
+</body>
+</html>
